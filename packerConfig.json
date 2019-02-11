@@ -1,0 +1,55 @@
+{
+"variables": {
+"vm_name": "TULEAP",
+"iso_url": "put_files_here/CentOS-7-x86_64-Minimal-1810.iso",
+"iso_checksum_type": "sha256",
+"iso_checksum": "38d5d51d9d100fd73df031ffd6bd8b1297ce24660dc8c13a3b8b4534a4bd291c",
+"ssh_username": "root",
+"ssh_password": "{{env `rootpw`}}",
+"dnsuffix":"{{env `USERDNSDOMAIN`}}",
+"proxy":"{{env `http_proxy`}}"
+},
+"builders": [
+{
+  "type": "vmware-iso",
+  "iso_url": "{{ user `iso_url` }}",
+  "iso_checksum": "{{ user `iso_checksum` }}",
+  "iso_checksum_type": "{{ user `iso_checksum_type` }}",
+  "vm_name": "{{ user `vm_name` }}",
+  "guest_os_type": "centos7-64",
+  "ssh_username": "{{ user `ssh_username` }}",
+  "ssh_password": "{{ user `ssh_password` }}",
+  "ssh_timeout": "60m",
+  "floppy_files": [
+          "kickstart/centos7.cfg"
+        ],
+  "boot_command": [
+  "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/centos7.cfg <enter><wait>"
+  ],
+  "shutdown_command": "shutdown -P now",
+  "shutdown_timeout": "45m"
+  }
+],
+"provisioners": [  
+  {
+    "type": "file",
+    "source": "upload/",
+    "destination": "/tmp"
+  },
+  {
+    "type": "shell",
+    "expect_disconnect": true,
+    "scripts": [
+      "scripts/YumProxySSL",
+      "scripts/updateOS",
+      "scripts/setHostname",
+      "scripts/installTuleap",
+      "scripts/LdapPlugin"
+    ],
+    "environment_vars": [
+      "proxy={{user `proxy`}}",
+      "fqdn={{ user `vm_name` }}.{{user `dnsuffix`}}"
+  ]
+  }
+  ]
+}

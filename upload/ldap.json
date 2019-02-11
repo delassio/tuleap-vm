@@ -1,0 +1,9 @@
+{
+    "ldap_type": "ActiveDirectory",
+    "ldap_server":"ldap://servername",
+    "ldap_dn":"dc=example,dc=com",
+    "ldap_bind_dn":"cn=user,ou=people,dc=example,dc=com",
+    "ldap_bind_passwd":"mypass",
+    "ldap_people_dn":"ou=People, dc=example, dc=com ; ou=Extranet, dc=example, dc=com",
+    "ldap_grp_dn":"ou=groups,dc=example,dc=com"
+}
