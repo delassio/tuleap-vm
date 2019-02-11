@@ -1,4 +1,4 @@
-TULEAP VM Builder
+TULEAP VM Builder (VMware Workstation)
 ===============================
 
 Welcome to the packer build for tuleap vm.  
