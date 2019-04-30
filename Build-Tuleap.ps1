@@ -52,7 +52,7 @@ Function Get-Rootpw {
                 Write-Host "error No root password is set, set it as rootpw in your environment."
                 $env:rootpw= Read-Host -Prompt "Enter root password ?"
                 Write-Output $env:rootpw | Out-File rootpw
-
+                Write-Host 'Root Password'$env:rootpw
                 Clear-Host        
             }
                                                                   
@@ -87,7 +87,7 @@ Function Stop-Px {
 
 Function Build-Tuleap {
     Write-Host 'Start Building Tuleap VM'
-    Write-Host 'Root Password'$env:rootpw 
+    Get-Rootpw 
     $env:PACKER_LOG=1
     $env:PACKER_LOG_PATH="packerlog.txt"     
     packer build packerConfig.json
