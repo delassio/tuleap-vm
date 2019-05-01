@@ -1,7 +1,23 @@
 # File created using '.gitignore Generator' for Visual Studio Code: https://bit.ly/vscode-gig
 
-# Created by https://www.gitignore.io/api/visualstudiocode,windows,packer
-# Edit at https://www.gitignore.io/?templates=visualstudiocode,windows,packer
+# Created by https://www.gitignore.io/api/packer,windows,clean
+# Edit at https://www.gitignore.io/?templates=packer,windows,clean
+
+### Clean ###
+# Binaries
+*.exe
+*.out
+
+# Project files
+*.prj
+
+# Directory used to store object files, abc files and assembly files
+Clean System Files/
+
+# iTasks environment extra data
+*-data/
+*-www/
+*-sapl/
 
 ### Packer ###
 # Cache objects
@@ -9,17 +25,6 @@ packer_cache/
 
 # For built boxes
 *.box
-
-### VisualStudioCode ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-### VisualStudioCode Patch ###
-# Ignore all local history of files
-.history
 
 ### Windows ###
 # Windows thumbnail cache files
@@ -46,7 +51,7 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.gitignore.io/api/visualstudiocode,windows,packer
+# End of https://www.gitignore.io/api/packer,windows,clean
 
 # Custom rules (everything added below won't be overriden by 'Generate .gitignore File' if you use 'Update' option)
 
