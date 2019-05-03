@@ -1,0 +1,21 @@
+#!/bin/bash -x
+
+echo 'INSTALLER: Disable yum fatestmirror plugin, mirrorlist' && \
+
+sed -i -e "s|enabled=1|enabled=0|"  /etc/yum/pluginconf.d/fastestmirror.conf
+
+sed -i -e "s|mirrorlist=|#mirrorlist=|"  /etc/yum.repos.d/CentOS-Base.repo
+
+sed -i -e "s|#baseurl=|baseurl=|"  /etc/yum.repos.d/CentOS-Base.repo
+
+echo 'INSTALLER: Started up' && \
+
+# get up to date
+yum upgrade -y && \
+
+echo 'INSTALLER: System updated' && \
+
+# reboot to new kernel 
+echo 'INSTALLER: System Reboot' && \
+
+shutdown -r now

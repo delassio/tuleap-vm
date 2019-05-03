@@ -85,16 +85,58 @@ Function Stop-Px {
     Start-Process -Verb open -WorkingDirectory px px.exe -ArgumentList "--quit"
 }
 
-Function Build-Tuleap {
-    Write-Host 'Start Building Tuleap VM'
+Function BuildPacker {
+    Write-Host 'Start Packer Build Tuleap VM'
     Get-Rootpw 
     $env:PACKER_LOG=1
     $env:PACKER_LOG_PATH="packerlog.txt"     
     packer build packerConfig.json
 }
 
+Function BuildTuleap {
 
+    Param(
+        [switch] $Proxy
+    )
 
-Start-Px(Test-Px)
-Build-Tuleap
-Stop-Px
+    if($Proxy.IsPresent) {
+        Write-Host "Build Tuleap Using Proxy"
+        Start-Px(Test-Px)
+        BuildPacker
+        Stop-Px
+    } else {
+        Write-Host "Proxy is NOT used"
+        BuildPacker
+    }
+
+}
+
+function Show-Menu
+{
+    param (
+        [string]$Title = 'Tuleap Packer Build'
+    )
+    Clear-Host
+    Write-Host "================ $Title ================"
+    
+    Write-Host "1: Press '1' Start Packer Build."
+    Write-Host "2: Press '2' Start Packer Build Using NTLM Proxy."
+    Write-Host "Q: Press 'Q' to quit."
+}
+
+do
+ {
+     Show-Menu
+     $selection = Read-Host "Please make a selection"
+     switch ($selection)
+     {
+         '1' {
+            BuildTuleap
+         } '2' {
+            BuildTuleap -Proxy
+         }
+     }
+     pause
+ }
+ until ($selection -eq 'q')
+

@@ -19,7 +19,7 @@
   "guest_os_type": "centos7-64",
   "ssh_username": "{{ user `ssh_username` }}",
   "ssh_password": "{{ user `ssh_password` }}",
-  "ssh_timeout": "60m",
+  "ssh_timeout": "120m",
   "floppy_files": [
           "kickstart/centos7.cfg"
         ],
@@ -27,7 +27,7 @@
   "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/centos7.cfg <enter><wait>"
   ],
   "shutdown_command": "shutdown -P now",
-  "shutdown_timeout": "45m"
+  "shutdown_timeout": "120m"
   }
 ],
 "provisioners": [  
@@ -41,9 +41,9 @@
     "expect_disconnect": true,
     "scripts": [
       "scripts/YumProxySSL",
-      "scripts/updateOS",
+      "scripts/YumUpdateOS",
       "scripts/setHostname",
-      "scripts/installTuleap",
+      "scripts/YumInstallTuleap",
       "scripts/LdapPlugin"
     ],
     "environment_vars": [

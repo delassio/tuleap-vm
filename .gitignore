@@ -3,14 +3,19 @@
 # Created by https://www.gitignore.io/api/packer,windows,clean
 # Edit at https://www.gitignore.io/?templates=packer,windows,clean
 
+### Tuleap ###
+rootpw
+
 ### Clean ###
 # Binaries
 *.exe
 *.out
+*.iso
 
 ### Packer ###
-# Cache objects
 packer_cache/
+packerlog.txt
+output-vmware-iso/
 
 # For built boxes
 *.box
