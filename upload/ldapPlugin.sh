@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 function customize_ldap_activedirectory {
         if [ -f '/etc/tuleap/plugins/ldap/etc/ActiveDirectory.inc' ]

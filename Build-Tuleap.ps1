@@ -41,24 +41,6 @@ else    {
     return $True
 }
 
-Function Get-Rootpw {    
-    do
-        {
-            if($env:rootpw.Length -gt 0)
-            {        
-                Write-Host "Default root password ($env:rootpw)"
-            }
-    else    {
-                Write-Host "error No root password is set, set it as rootpw in your environment."
-                $env:rootpw= Read-Host -Prompt "Enter root password ?"
-                Write-Output $env:rootpw | Out-File rootpw
-                Write-Host 'Root Password'$env:rootpw
-                Clear-Host        
-            }
-                                                                  
-        } while (([string]::IsNullOrEmpty($env:rootpw)))
-    }
-
 Function Start-Px ($CHECK) {
     if ($CHECK){
     Clear-Host
@@ -76,7 +58,7 @@ Function Start-Px ($CHECK) {
     $env:px_username=$env:USERDOMAIN+'\'+$env:USERNAME
 
     Write-Host 'Px username'$env:px_username
-    Get-Rootpw
+
     Start-Process -Verb open -WorkingDirectory px cmd.exe -ArgumentList "/c", "px.exe", "--server=$env:px_server", "--listen=$env:px_listen", "--user=$env:px_username", "--foreground", "--debug"}
     else {Write-Host "Failed to start Px server $env:px_server :("}
 }
@@ -85,58 +67,160 @@ Function Stop-Px {
     Start-Process -Verb open -WorkingDirectory px px.exe -ArgumentList "--quit"
 }
 
-Function BuildPacker {
-    Write-Host 'Start Packer Build Tuleap VM'
-    Get-Rootpw 
-    $env:PACKER_LOG=1
-    $env:PACKER_LOG_PATH="packerlog.txt"     
-    packer build packerConfig.json
+Function Set-Rootpw {    
+    do
+        {
+            Clear-Host
+            Write-Host "======Set Password as rootpw Environment Variable======="
+            if($env:rootpw.Length -gt 0)
+            {        
+            Write-Host "===Default `$env:rootpw ($env:rootpw)==="
+            } elseif ([string]::IsNullOrEmpty($env:rootpw)) {
+                Write-Host " No password exist as `$env:rootpw"
+                Write-Host " Press '1' Set Mannually Password."
+                Write-Host " Press '2' Auto Generate Password."
+                $selection = Read-Host "Please make a selection"
+                        switch ($selection)
+                                            {
+                                                '1' {
+                                                    $env:rootpw= Read-Host -Prompt "Enter root password ?"
+                                                }
+                                                '2' {
+                                                    Write-Host "Auto generate password..."
+                                                    $password = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".tochararray()
+                                                    $env:rootpw = ($password | Get-Random -count 8) -join ''
+                                                } 
+                                                default {
+                                                }  
+                                            }
+            }   
+            
+                Write-Output $env:rootpw | Out-File .root_passwd
+                if ($?) {
+                    Write-Host "Root credentials are saved into .tuleap_passwd"}    
+        } while (([string]::IsNullOrEmpty($env:rootpw)))
+        Pause
+        Clear-Host
+    }
+function Show-packerMenu
+{
+    param (
+        [string]$Title = 'Packer Menu'
+    )
+    do
+{
+    Clear-Host
+    Write-Host "================ $Title ================"
+    
+    Write-Host " Press '0' Kickstart."
+    Write-Host " Press '1' CentOS."
+    Write-Host " Press '2' Tuleap."
+    Write-Host " Press '3' Ldap."
+    Write-Host " Press 'r' Return."
+    $selection = Read-Host "Please select provisionner config"
+    If($selection -eq "r") 
+    {
+        Show-proxyMenu
+        break
+   }
+    switch ($selection)
+    {
+        '1' {
+           $option = "-var provision=centos"
+        }
+        '2' {
+           $option = "-var 'provision=tuleap'"
+        } 
+        '3' {
+           $option = "-var 'provision=ldap'"
+        } 
+        '0' {
+            $option = $null
+        }  
+    }   
+} until (-not ([string]::IsNullOrEmpty($selection)))
+return $option
 }
 
-Function BuildTuleap {
+function BuildPacker
+{
+param (
+    [string]$Title = 'Packer Menu'
+) 
+
+     $option=Show-packerMenu $Title
+ 
+     $env:PACKER_LOG=1
+     $env:PACKER_LOG_PATH="packerlog.txt"
+     $host.ui.RawUI.WindowTitle = "packer build $option packerConfig.json"
+     Set-Rootpw
+     invoke-expression  "packer build $option packerConfig.json"
+     Pause
+ }
+
+
+Function BuildProxy {
 
     Param(
-        [switch] $Proxy
+        [switch] $proxy=$false
     )
-
-    if($Proxy.IsPresent) {
-        Write-Host "Build Tuleap Using Proxy"
+    if($proxy) {
         Start-Px(Test-Px)
-        BuildPacker
+        BuildPacker "Packer Build Tuleap Using Px Proxy"
         Stop-Px
-    } else {
-        Write-Host "Proxy is NOT used"
-        BuildPacker
+    } elseif (-not $proxy) {
+        BuildPacker "Packer Build Tuleap Using Direct Internet"
     }
 
 }
 
-function Show-Menu
+function Show-proxyMenu
 {
     param (
-        [string]$Title = 'Tuleap Packer Build'
+        [string]$Title = 'Proxy Menu'
     )
+
+    do
+ {
     Clear-Host
     Write-Host "================ $Title ================"
     
-    Write-Host "1: Press '1' Start Packer Build."
-    Write-Host "2: Press '2' Start Packer Build Using NTLM Proxy."
-    Write-Host "Q: Press 'Q' to quit."
-}
+    Write-Host " Press 'Any Key' Direct Internet."
+    Write-Host " Press 'y' Proxy Internet."
+    Write-Host " Press 'x' Exit."
 
-do
- {
-     Show-Menu
-     $selection = Read-Host "Please make a selection"
+    $selection = Read-Host "                   Please make a selection"
+    If($selection -eq "x") 
+    {
+        $selection=$null
+        break
+    }     
      switch ($selection)
      {
-         '1' {
-            BuildTuleap
-         } '2' {
-            BuildTuleap -Proxy
+         'y' {
+            $option = "-proxy"
          }
+         default {
+            $option = "" 
+         }  
      }
-     pause
+     $BuildProxyInvoke = "BuildProxy";
+     invoke-expression  "$BuildProxyInvoke $option"
  }
- until ($selection -eq 'q')
+ until (-not ([string]::IsNullOrEmpty($selection)))
+}
+
+function BuildTuleap
+{
+param (
+    [string]$Title = 'Tuleap VM Image'
+) 
+
+$host.ui.RawUI.WindowTitle=$Title
+Show-proxyMenu "Network Proxy Settings"
+
+}
+
+
+BuildTuleap
 

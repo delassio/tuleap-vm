@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/bash
 
 
 function configure_dependencies {
@@ -78,7 +78,7 @@ firewall-cmd --reload
 
 #show admin password
 function admin_passwd {
-  cat .tuleap_passwd | grep admin 
+  cat /root/.tuleap_passwd | grep admin 
 }
 
 

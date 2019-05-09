@@ -4,8 +4,7 @@
 # Edit at https://www.gitignore.io/?templates=packer,windows,clean
 
 ### Tuleap ###
-rootpw
-
+.root_passwd
 ### Clean ###
 # Binaries
 *.exe

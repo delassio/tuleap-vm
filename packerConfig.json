@@ -7,7 +7,8 @@
 "ssh_username": "root",
 "ssh_password": "{{env `rootpw`}}",
 "dnsuffix":"{{env `USERDNSDOMAIN`}}",
-"proxy":"{{env `http_proxy`}}"
+"proxy":"{{env `http_proxy`}}",
+"provision":""
 },
 "builders": [
 {
@@ -40,15 +41,13 @@
     "type": "shell",
     "expect_disconnect": true,
     "scripts": [
-      "scripts/YumProxySSL",
-      "scripts/YumUpdateOS",
-      "scripts/setHostname",
-      "scripts/YumInstallTuleap",
-      "scripts/LdapPlugin"
+      "scripts/provisionScript"
     ],
     "environment_vars": [
       "proxy={{user `proxy`}}",
-      "fqdn={{ user `vm_name` }}.{{user `dnsuffix`}}"
+      "hostname={{ user `vm_name` }}",
+      "domainname={{user `dnsuffix`}}",
+      "provision={{user `provision`}}"
   ]
   }
   ]
