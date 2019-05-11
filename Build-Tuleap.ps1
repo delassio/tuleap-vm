@@ -32,7 +32,8 @@ do
             Write-Host "Default PROXY ($env:px_server)"
         }
 else    {
-            Write-Host "No SYSTEM PROXY SETTING detected"
+            Clear-Host
+            Write-Host "======== No SYSTEM PROXY SETTING detected ========"
             $env:px_server= Read-Host -Prompt "Enter Enterprise Proxy <IP:port>, <hostname:port> ?"
             Clear-Host        
         }
@@ -67,40 +68,46 @@ Function Stop-Px {
     Start-Process -Verb open -WorkingDirectory px px.exe -ArgumentList "--quit"
 }
 
-Function Set-Rootpw {    
+Function Set-Rootpw {
+    param (
+    [string]$Title = 'Password Menu'
+)     
     do
         {
             Clear-Host
+            Write-Host "========================= $Title ======================="
             Write-Host "======Set Password as rootpw Environment Variable======="
             if($env:rootpw.Length -gt 0)
             {        
             Write-Host "===Default `$env:rootpw ($env:rootpw)==="
             } elseif ([string]::IsNullOrEmpty($env:rootpw)) {
-                Write-Host " No password exist as `$env:rootpw"
                 Write-Host " Press '1' Set Mannually Password."
-                Write-Host " Press '2' Auto Generate Password."
-                $selection = Read-Host "Please make a selection"
+                Write-Host " Press 'r' Return."
+                $selection = Read-Host " No password exist as `$env:rootpw, Default Generate"
+                If($selection -eq "r") 
+                {
+                    Show-packerMenu $Title
+                    break
+               }
                         switch ($selection)
                                             {
                                                 '1' {
                                                     $env:rootpw= Read-Host -Prompt "Enter root password ?"
                                                 }
-                                                '2' {
-                                                    Write-Host "Auto generate password..."
+                                                default {
+                                                    Write-Host "Generate random password..."
                                                     $password = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".tochararray()
                                                     $env:rootpw = ($password | Get-Random -count 8) -join ''
                                                 } 
-                                                default {
-                                                }  
                                             }
             }   
             
                 Write-Output $env:rootpw | Out-File .root_passwd
                 if ($?) {
-                    Write-Host "Root credentials are saved into .tuleap_passwd"}    
+                    Write-Host "Root credentials are saved into .tuleap_passwd"}
+                    Pause
+                    Clear-Host    
         } while (([string]::IsNullOrEmpty($env:rootpw)))
-        Pause
-        Clear-Host
     }
 function Show-packerMenu
 {
@@ -112,12 +119,11 @@ function Show-packerMenu
     Clear-Host
     Write-Host "================ $Title ================"
     
-    Write-Host " Press '0' Kickstart."
-    Write-Host " Press '1' CentOS."
-    Write-Host " Press '2' Tuleap."
-    Write-Host " Press '3' Ldap."
+    Write-Host " Press '0' CentOS."
+    Write-Host " Press '1' Tuleap."
+    Write-Host " Press '2' Ldap."
     Write-Host " Press 'r' Return."
-    $selection = Read-Host "Please select provisionner config"
+    $selection = Read-Host " Press Any Key: Default Packer Build Kickstart"
     If($selection -eq "r") 
     {
         Show-proxyMenu
@@ -125,19 +131,20 @@ function Show-packerMenu
    }
     switch ($selection)
     {
-        '1' {
+        '0' {
            $option = "-var provision=centos"
         }
-        '2' {
+        '1' {
            $option = "-var 'provision=tuleap'"
         } 
-        '3' {
+        '2' {
            $option = "-var 'provision=ldap'"
         } 
-        '0' {
+        default {
             $option = $null
         }  
-    }   
+    }
+    if (([string]::IsNullOrEmpty($selection))) {break}
 } until (-not ([string]::IsNullOrEmpty($selection)))
 return $option
 }
@@ -148,12 +155,12 @@ param (
     [string]$Title = 'Packer Menu'
 ) 
 
-     $option=Show-packerMenu $Title
- 
+     $option=Show-packerMenu $Title 
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
      $host.ui.RawUI.WindowTitle = "packer build $option packerConfig.json"
-     Set-Rootpw
+     Set-Rootpw $Title
+     Write-Host "Building VMware image..."
      invoke-expression  "packer build $option packerConfig.json"
      Pause
  }
@@ -185,11 +192,10 @@ function Show-proxyMenu
     Clear-Host
     Write-Host "================ $Title ================"
     
-    Write-Host " Press 'Any Key' Direct Internet."
     Write-Host " Press 'y' Proxy Internet."
     Write-Host " Press 'x' Exit."
 
-    $selection = Read-Host "                   Please make a selection"
+    $selection = Read-Host " Press Any Key: Default Direct Internet."
     If($selection -eq "x") 
     {
         $selection=$null
@@ -199,10 +205,7 @@ function Show-proxyMenu
      {
          'y' {
             $option = "-proxy"
-         }
-         default {
-            $option = "" 
-         }  
+         } 
      }
      $BuildProxyInvoke = "BuildProxy";
      invoke-expression  "$BuildProxyInvoke $option"
