@@ -1,13 +1,13 @@
 #!/bin/bash
 
-echo 'INSTALLER: Update OS...' && \
 
 # get up to date
-yum upgrade -y && \
 
-echo 'INSTALLER: System updated' && \
 
-# reboot to new kernel 
-echo 'INSTALLER: System Reboot' && \
+sudo yum -y upgrade &&
 
-shutdown -r now
+echo "System Updated..." &&
+
+echo 'Going to reboot to get updated system...' &&
+
+sudo shutdown -r now

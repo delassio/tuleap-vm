@@ -123,7 +123,7 @@ function Show-packerMenu
     Write-Host " Press '1' Tuleap."
     Write-Host " Press '2' Ldap."
     Write-Host " Press 'r' Return."
-    $selection = Read-Host " Press Any Key: Default Packer Build Kickstart"
+    $selection = Read-Host " Press Any Key: Default Packer Build Template"
     If($selection -eq "r") 
     {
         Show-proxyMenu
@@ -132,21 +132,35 @@ function Show-packerMenu
     switch ($selection)
     {
         '0' {
-           $option = "-var provision=centos"
+            #centos
+            $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
+            $template.provisioners[1].scripts = @('upload/yumConf.sh','upload/setHostname.sh','upload/yumUpdateOS.sh')
+            $TempFile = New-TemporaryFile
+            $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            return Resolve-Path $TempFile
         }
         '1' {
-           $option = "-var 'provision=tuleap'"
+            #tuleap
+            $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
+            $template.provisioners[1].scripts = @('upload/yumConf.sh','upload/setHostname.sh','upload/yumUpdateOS.sh','upload\yumInstallTuleap.sh')
+            $TempFile = New-TemporaryFile
+            $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            return Resolve-Path $TempFile
         } 
         '2' {
-           $option = "-var 'provision=ldap'"
+            #ldap
+            $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
+            $template.provisioners[1].scripts = @('upload/yumConf.sh','upload/setHostname.sh','upload/yumUpdateOS.sh','upload\yumInstallTuleap.sh','upload\ldapPlugin.sh')
+            $TempFile = New-TemporaryFile
+            $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            return Resolve-Path $TempFile
         } 
         default {
-            $option = $null
+            return Resolve-Path "packerConfig.json"
         }  
     }
     if (([string]::IsNullOrEmpty($selection))) {break}
 } until (-not ([string]::IsNullOrEmpty($selection)))
-return $option
 }
 
 function BuildPacker
@@ -155,13 +169,13 @@ param (
     [string]$Title = 'Packer Menu'
 ) 
 
-     $option=Show-packerMenu $Title 
+     $path=Show-packerMenu $Title 
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
-     $host.ui.RawUI.WindowTitle = "packer build $option packerConfig.json"
+     $host.ui.RawUI.WindowTitle = "packer build $path"
      Set-Rootpw $Title
      Write-Host "Building VMware image..."
-     invoke-expression  "packer build $option packerConfig.json"
+     invoke-expression  "packer build $path"
      Pause
  }
 

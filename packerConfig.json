@@ -7,8 +7,7 @@
 "ssh_username": "root",
 "ssh_password": "{{env `rootpw`}}",
 "dnsuffix":"{{env `USERDNSDOMAIN`}}",
-"proxy":"{{env `http_proxy`}}",
-"provision":""
+"proxy":"{{env `http_proxy`}}"
 },
 "builders": [
 {
@@ -41,13 +40,12 @@
     "type": "shell",
     "expect_disconnect": true,
     "scripts": [
-      "scripts/provisionScript"
+      "upload/yumUpdateOS.sh"
     ],
     "environment_vars": [
       "proxy={{user `proxy`}}",
       "hostname={{ user `vm_name` }}",
-      "domainname={{user `dnsuffix`}}",
-      "provision={{user `provision`}}"
+      "domainname={{user `dnsuffix`}}"
   ]
   }
   ]
