@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z "$hostname" ] 
+then
+hostname="localhost"
+fi
 if [ -z "$domainname" ] 
 then
 fqdn="$hostname.localdomain"

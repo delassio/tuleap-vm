@@ -1,21 +1,21 @@
 {
 "variables": {
-"vm_name": "TULEAP",
 "iso_url": "put_files_here/CentOS-7-x86_64-Minimal-1810.iso",
 "iso_checksum_type": "sha256",
 "iso_checksum": "38d5d51d9d100fd73df031ffd6bd8b1297ce24660dc8c13a3b8b4534a4bd291c",
 "ssh_username": "root",
 "ssh_password": "{{env `rootpw`}}",
+"hostname": "",
 "dnsuffix":"{{env `USERDNSDOMAIN`}}",
 "proxy":"{{env `http_proxy`}}"
 },
 "builders": [
 {
   "type": "vmware-iso",
+  "vm_name": "{{ user `hostname` }}",
   "iso_url": "{{ user `iso_url` }}",
   "iso_checksum": "{{ user `iso_checksum` }}",
   "iso_checksum_type": "{{ user `iso_checksum_type` }}",
-  "vm_name": "{{ user `vm_name` }}",
   "guest_os_type": "centos7-64",
   "ssh_username": "{{ user `ssh_username` }}",
   "ssh_password": "{{ user `ssh_password` }}",
@@ -38,15 +38,16 @@
   },
   {
     "type": "shell",
-    "expect_disconnect": true,
-    "scripts": [
-      "upload/yumUpdateOS.sh"
+    "inline": [
+      "chmod -R a+rx /tmp/scripts && /tmp/scripts/setEnvironmentVariables.sh \"{{user `proxy`}}\" \"{{user `hostname`}}\" \"{{user `dnsuffix`}}\""
     ],
-    "environment_vars": [
-      "proxy={{user `proxy`}}",
-      "hostname={{ user `vm_name` }}",
-      "domainname={{user `dnsuffix`}}"
-  ]
-  }
+    "expect_disconnect": true
+  },
+  {
+    "pause_before": "30s",
+      "type": "shell",
+      "inline": [""
+            ]
+}
   ]
 }

@@ -134,7 +134,7 @@ function Show-packerMenu
         '0' {
             #centos
             $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
-            $template.provisioners[1].scripts = @('upload/yumConf.sh','upload/setHostname.sh','upload/yumUpdateOS.sh')
+            $template.provisioners[1].scripts = @('chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/setHostname.sh && /tmp/yumUpdateOS.sh')
             $TempFile = New-TemporaryFile
             $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
             return Resolve-Path $TempFile
@@ -142,7 +142,8 @@ function Show-packerMenu
         '1' {
             #tuleap
             $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
-            $template.provisioners[1].scripts = @('upload/yumConf.sh','upload/setHostname.sh','upload/yumUpdateOS.sh','upload\yumInstallTuleap.sh')
+            $template.provisioners[1].inline = @('chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh')
+            $template.provisioners[2].inline = @('/tmp/scripts/yumInstallTuleap.sh')
             $TempFile = New-TemporaryFile
             $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
             return Resolve-Path $TempFile
@@ -150,7 +151,8 @@ function Show-packerMenu
         '2' {
             #ldap
             $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
-            $template.provisioners[1].scripts = @('upload/yumConf.sh','upload/setHostname.sh','upload/yumUpdateOS.sh','upload\yumInstallTuleap.sh','upload\ldapPlugin.sh')
+            $template.provisioners[1].inline = @('chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh')
+            $template.provisioners[2].inline = @('/tmp/scripts/yumInstallTuleap.sh && /tmp/scripts/ldapPlugin.sh')
             $TempFile = New-TemporaryFile
             $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
             return Resolve-Path $TempFile
