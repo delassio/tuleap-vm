@@ -4,7 +4,8 @@
 # Edit at https://www.gitignore.io/?templates=packer,windows,clean
 
 ### Tuleap ###
-.root_passwd
+.tuleap_passwd
+.centos_passwd
 ### Clean ###
 # Binaries
 *.exe
@@ -15,6 +16,7 @@
 packer_cache/
 packerlog.txt
 output-vmware-iso/
+output-vmware-iso-last/
 
 # For built boxes
 *.box

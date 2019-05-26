@@ -40,14 +40,7 @@
     "type": "shell",
     "inline": [
       "chmod -R a+rx /tmp/scripts && /tmp/scripts/setEnvironmentVariables.sh \"{{user `proxy`}}\" \"{{user `hostname`}}\" \"{{user `dnsuffix`}}\""
-    ],
-    "expect_disconnect": true
-  },
-  {
-    "pause_before": "30s",
-      "type": "shell",
-      "inline": [""
-            ]
-}
+    ]
+  }
   ]
 }

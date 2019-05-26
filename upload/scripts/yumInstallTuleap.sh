@@ -77,9 +77,9 @@ firewall-cmd --reload
 }
 
 #show admin password
-function admin_passwd {
-  cat /root/.tuleap_passwd | grep admin 
-}
+#function admin_passwd {
+#  cat /root/.tuleap_passwd | grep admin 
+#}
 
 
 configure_dependencies && \
@@ -87,5 +87,5 @@ tuleap_repo && \
 install_rpm && \
 mysql_config && \
 setup_tuleap && \
-http_ports && \
-admin_passwd
+http_ports
+#admin_passwd

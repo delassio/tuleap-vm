@@ -95,16 +95,17 @@ Function Set-Rootpw {
                                                     $env:rootpw= Read-Host -Prompt "Enter root password ?"
                                                 }
                                                 default {
-                                                    Write-Host "Generate random password..."
+                                                    Write-Host " Generate CentOS password..."
+                                                    Write-Host " Set CentOS password for root"
                                                     $password = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".tochararray()
                                                     $env:rootpw = ($password | Get-Random -count 8) -join ''
                                                 } 
                                             }
             }   
-            
-                Write-Output $env:rootpw | Out-File .root_passwd
+                $centosFile = ".centos_passwd"
+                Write-Output "CentOS system user password (root): $env:rootpw"  | Out-File $centosFile
                 if ($?) {
-                    Write-Host "Root credentials are saved into .tuleap_passwd"}
+                    Write-Host " Adding credentials to $centosFile"}
                     Pause
                     Clear-Host    
         } while (([string]::IsNullOrEmpty($env:rootpw)))
@@ -133,32 +134,76 @@ function Show-packerMenu
     {
         '0' {
             #centos
-            $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
-            $template.provisioners[1].scripts = @('chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/setHostname.sh && /tmp/yumUpdateOS.sh')
+            $TemplateJsonFile="packerConfigCentos.json"
+            if (Test-Path $TemplateJsonFile) { Remove-Item $TemplateJsonFile -Force }
+            $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+            
+            $Json.provisioners[1].inline = 'chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh'
+            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+            
             $TempFile = New-TemporaryFile
-            $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            return Resolve-Path $TempFile
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            Move-Item $TempFile $TemplateJsonFile
+            return $TemplateJsonFile
         }
         '1' {
             #tuleap
-            $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
-            $template.provisioners[1].inline = @('chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh')
-            $template.provisioners[2].inline = @('/tmp/scripts/yumInstallTuleap.sh')
+            $TemplateJsonFile="packerConfigTuleap.json"
+            if (Test-Path $TemplateJsonFile) { Remove-Item $TemplateJsonFile -Force }
+            $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+            
+            $Json.provisioners += @{}
+            $Json.provisioners += @{}
             $TempFile = New-TemporaryFile
-            $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            return Resolve-Path $TempFile
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
+            
+            $Json.provisioners[1].inline = 'chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh'
+            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value '/tmp/scripts/yumInstallTuleap.sh'
+            
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
+            
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            Move-Item $TempFile $TemplateJsonFile
+            return $TemplateJsonFile
         } 
         '2' {
             #ldap
-            $template = Get-Content 'packerConfig.json' | ConvertFrom-Json
-            $template.provisioners[1].inline = @('chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh')
-            $template.provisioners[2].inline = @('/tmp/scripts/yumInstallTuleap.sh && /tmp/scripts/ldapPlugin.sh')
+            $TemplateJsonFile="packerConfigLdap.json"
+            if (Test-Path $TemplateJsonFile) { Remove-Item $TemplateJsonFile -Force }
+            $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+
+            $Json.provisioners += @{}
+            $Json.provisioners += @{}
             $TempFile = New-TemporaryFile
-            $template | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            return Resolve-Path $TempFile
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
+            
+            $Json.provisioners[1].inline = 'chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh'
+            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value '/tmp/scripts/yumInstallTuleap.sh'
+            
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
+            
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            Move-Item $TempFile $TemplateJsonFile
+            return $TemplateJsonFile
         } 
         default {
-            return Resolve-Path "packerConfig.json"
+            return "packerConfig.json"
         }  
     }
     if (([string]::IsNullOrEmpty($selection))) {break}
@@ -171,13 +216,13 @@ param (
     [string]$Title = 'Packer Menu'
 ) 
 
-     $path=Show-packerMenu $Title 
+     $Template=Show-packerMenu $Title 
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
-     $host.ui.RawUI.WindowTitle = "packer build $path"
+     $host.ui.RawUI.WindowTitle = "packer build $Template"
      Set-Rootpw $Title
      Write-Host "Building VMware image..."
-     invoke-expression  "packer build $path"
+     invoke-expression  "packer build $Template"
      Pause
  }
 
@@ -240,6 +285,32 @@ Show-proxyMenu "Network Proxy Settings"
 
 }
 
+function Cleanup {
 
+    $outputFolder = "output-vmware-iso"
+    $tuleapFile = ".tuleap_passwd"
+    $centosFile = ".centos_passwd"
+
+	if (Test-Path $outputFolder) {
+        if (Test-Path $tuleapFile) { Move-Item $tuleapFile output-vmware-iso }
+        if (Test-Path $centosFile) { Move-Item $centosFile output-vmware-iso }
+        Move-Item $outputFolder output-vmware-iso-last
+    } else 
+
+    {
+
+    if (Test-Path $tuleapFile) {
+        Remove-Item $tuleapFile -Force
+    }
+
+    if (Test-Path $centosFile) {
+        Remove-Item $centosFile -Force
+    }
+    }
+}
+
+Cleanup
+Write-Host " Cleanup Password and VM Output Directory."
+Pause
 BuildTuleap
 
