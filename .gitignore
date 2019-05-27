@@ -16,7 +16,7 @@
 packer_cache/
 packerlog.txt
 output-vmware-iso/
-output-provision/
+output-provisioners/
 output-centos/
 output-tuleap/
 output-ldap/

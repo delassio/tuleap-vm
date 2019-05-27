@@ -229,6 +229,7 @@ function CleanupPackage {
     Clear-Host
     Write-Host "======================== Cleanup & Package ==========================="
     Write-Host "Copying $centosFile, $tuleapFile, $TemplateJsonFile into $outputFolderLast Directory"
+    Write-Host "$TemplateType VM File will be removed from VMware Workstation Library"
 
 	if (Test-Path $outputFolder) {
         if (Test-Path $tuleapFile) { Move-Item $tuleapFile $outputFolder }
@@ -260,7 +261,7 @@ param (
      $TemplateJsonFile = $Template[1] 
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
-     $host.ui.RawUI.WindowTitle = "Packer Build Template $TemplateType ..." 
+     $host.ui.RawUI.WindowTitle = "Packer Build Template ($TemplateType)" 
      Set-Rootpw $Title
      Write-Host "Creating $TemplateTypepacker VM Image > packer build $TemplateJsonFile" 
      invoke-expression  "packer build $TemplateJsonFile"
