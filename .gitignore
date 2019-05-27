@@ -16,7 +16,14 @@
 packer_cache/
 packerlog.txt
 output-vmware-iso/
-output-vmware-iso-last/
+output-provision/
+output-centos/
+output-tuleap/
+output-ldap/
+packerConfigProvisioners.json
+packerConfigCentos.json
+packerConfigTuleap.json
+packerConfigLdap.json
 
 # For built boxes
 *.box

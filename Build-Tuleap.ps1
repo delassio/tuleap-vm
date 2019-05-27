@@ -133,9 +133,8 @@ function Show-packerMenu
     switch ($selection)
     {
         '0' {
-            #centos
+            $TemplateType="CentOS"
             $TemplateJsonFile="packerConfigCentos.json"
-            if (Test-Path $TemplateJsonFile) { Remove-Item $TemplateJsonFile -Force }
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
             
             $Json.provisioners[1].inline = 'chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh'
@@ -144,12 +143,11 @@ function Show-packerMenu
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return $TemplateJsonFile
+            return @($TemplateType,$TemplateJsonFile)
         }
         '1' {
-            #tuleap
+            $TemplateType="Tuleap"
             $TemplateJsonFile="packerConfigTuleap.json"
-            if (Test-Path $TemplateJsonFile) { Remove-Item $TemplateJsonFile -Force }
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
             
             $Json.provisioners += @{}
@@ -172,12 +170,11 @@ function Show-packerMenu
             
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return $TemplateJsonFile
+            return @($TemplateType,$TemplateJsonFile)
         } 
         '2' {
-            #ldap
+            $TemplateType="Ldap"
             $TemplateJsonFile="packerConfigLdap.json"
-            if (Test-Path $TemplateJsonFile) { Remove-Item $TemplateJsonFile -Force }
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
 
             $Json.provisioners += @{}
@@ -200,14 +197,56 @@ function Show-packerMenu
             
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return $TemplateJsonFile
+            return @($TemplateType,$TemplateJsonFile)
         } 
         default {
-            return "packerConfig.json"
+            $TemplateType="Provisioners"
+            $TemplateJsonFile="packerConfigProvisioners.json"
+            $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+            
+            $TempFile = New-TemporaryFile
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            Move-Item $TempFile $TemplateJsonFile
+            return @($TemplateType,$TemplateJsonFile)
         }  
     }
     if (([string]::IsNullOrEmpty($selection))) {break}
 } until (-not ([string]::IsNullOrEmpty($selection)))
+}
+
+function CleanupPackage {
+
+    param (
+        [string]$TemplateType
+    )
+    
+    $outputFolder = "output-vmware-iso"
+    $outputFolderLast = "output-${TemplateType}"
+    $TemplateJsonFile = "packerConfig${TemplateType}.json"
+    $tuleapFile = ".tuleap_passwd"
+    $centosFile = ".centos_passwd"
+    
+    Clear-Host
+    Write-Host "======================== Cleanup & Package ==========================="
+    Write-Host "Copying $centosFile, $tuleapFile, $TemplateJsonFile into $outputFolderLast Directory"
+
+	if (Test-Path $outputFolder) {
+        if (Test-Path $tuleapFile) { Move-Item $tuleapFile $outputFolder }
+        if (Test-Path $centosFile) { Move-Item $centosFile $outputFolder }
+        if (Test-Path $TemplateJsonFile) { Move-Item $TemplateJsonFile $outputFolder }
+        Move-Item $outputFolder $outputFolderLast -Force
+    } else 
+
+    {
+
+    if (Test-Path $tuleapFile) {
+        Remove-Item $tuleapFile -Force
+    }
+
+    if (Test-Path $centosFile) {
+        Remove-Item $centosFile -Force
+    }
+    }
 }
 
 function BuildPacker
@@ -216,13 +255,17 @@ param (
     [string]$Title = 'Packer Menu'
 ) 
 
-     $Template=Show-packerMenu $Title 
+     $Template=Show-packerMenu $Title
+     $TemplateType= $Template[0]
+     $TemplateJsonFile = $Template[1] 
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
-     $host.ui.RawUI.WindowTitle = "packer build $Template"
+     $host.ui.RawUI.WindowTitle = "Packer Build Template $TemplateType ..." 
      Set-Rootpw $Title
-     Write-Host "Building VMware image..."
-     invoke-expression  "packer build $Template"
+     Write-Host "Creating $TemplateTypepacker VM Image > packer build $TemplateJsonFile" 
+     invoke-expression  "packer build $TemplateJsonFile"
+     Read-Host ' Press Enter to re-package artifacts into new Directory...'
+     CleanupPackage $TemplateType
      Pause
  }
 
@@ -285,32 +328,4 @@ Show-proxyMenu "Network Proxy Settings"
 
 }
 
-function Cleanup {
-
-    $outputFolder = "output-vmware-iso"
-    $tuleapFile = ".tuleap_passwd"
-    $centosFile = ".centos_passwd"
-
-	if (Test-Path $outputFolder) {
-        if (Test-Path $tuleapFile) { Move-Item $tuleapFile output-vmware-iso }
-        if (Test-Path $centosFile) { Move-Item $centosFile output-vmware-iso }
-        Move-Item $outputFolder output-vmware-iso-last
-    } else 
-
-    {
-
-    if (Test-Path $tuleapFile) {
-        Remove-Item $tuleapFile -Force
-    }
-
-    if (Test-Path $centosFile) {
-        Remove-Item $centosFile -Force
-    }
-    }
-}
-
-Cleanup
-Write-Host " Cleanup Password and VM Output Directory."
-Pause
 BuildTuleap
-
