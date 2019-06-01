@@ -9,6 +9,7 @@
 "dnsuffix":"{{env `USERDNSDOMAIN`}}",
 "proxy":"{{env `http_proxy`}}"
 },
+
 "builders": [
 {
   "type": "vmware-iso",
@@ -30,6 +31,7 @@
   "shutdown_timeout": "120m"
   }
 ],
+
 "provisioners": [  
   {
     "type": "file",
@@ -39,8 +41,13 @@
   {
     "type": "shell",
     "inline": [
-      "chmod -R a+rx /tmp/scripts && /tmp/scripts/setEnvironmentVariables.sh \"{{user `proxy`}}\" \"{{user `hostname`}}\" \"{{user `dnsuffix`}}\""
-    ]
+      "chmod -R a+rx /tmp/scripts && /tmp/scripts/setEnvironmentVariables.sh"
+    ],
+	"environment_vars": [
+      "proxy={{user `proxy`}}",
+      "hostname={{ user `hostname` }}",
+      "domainname={{user `dnsuffix`}}"
+	  ]
   }
   ]
 }

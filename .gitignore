@@ -4,26 +4,25 @@
 # Edit at https://www.gitignore.io/?templates=packer,windows,clean
 
 ### Tuleap ###
-.tuleap_passwd
-.centos_passwd
+.*_passwd
+.*_rootpw
+
 ### Clean ###
+
 # Binaries
 *.exe
 *.out
 *.iso
 
+
+### Log ###
+*.log
+
 ### Packer ###
 packer_cache/
 packerlog.txt
-output-vmware-iso/
-output-provisioners/
-output-centos/
-output-tuleap/
-output-ldap/
-packerConfigProvisioners.json
-packerConfigCentos.json
-packerConfigTuleap.json
-packerConfigLdap.json
+output-*/
+packerConfig-*.json
 
 # For built boxes
 *.box

@@ -1,81 +1,24 @@
-Function Connect-Px($SERVER) {
-    if($SERVER.Length -eq 0)
-    {
-        Write-Host "No input detected"
-        return $False
-    } 
-    elseif ($SERVER.Length -gt 0 )
-    { 
-                Write-Host "Connecting to $Server ..."
-                $HOSTIP, $PORT= $SERVER.split(":")
-                if ([string]::IsNullOrEmpty($PORT)) {$PORT="80"}
-                if (Test-NetConnection -ComputerName $HOSTIP -Port $PORT -InformationLevel Quiet)
-                            {
-                                Write-Host "Successfully connected into Enterprise proxy $SERVER... :)"
-                                return $True
-                            }
-                            else 
-                            {
-                                Write-Host "Failed to connect into $SERVER :("
-                                return $False   
-                            }
-    }
+# Import PxServer Function
+
+# region Include required files
+#
+$ScriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
+try {
+    . ("$ScriptDirectory\PxServer.ps1")
 }
-
-
-Function Test-Px {    
-do
-    {
-        if($env:http_proxy.Length -gt 0)
-        {        
-            $env:px_server= $env:http_proxy.trimstart("http://")
-            Write-Host "Default PROXY ($env:px_server)"
-        }
-else    {
-            Clear-Host
-            Write-Host "======== No SYSTEM PROXY SETTING detected ========"
-            $env:px_server= Read-Host -Prompt "Enter Enterprise Proxy <IP:port>, <hostname:port> ?"
-            Clear-Host        
-        }
-                                                              
-    } while (-not (Connect-Px($env:px_server)))
-    return $True
+catch {
+    Write-Host "Error while loading supporting PowerShell Scripts" 
 }
-
-Function Start-Px ($CHECK) {
-    if ($CHECK){
-    Clear-Host
-    Write-Host "Starting Px Server $env:px_server"    
-    $IF=$(Get-DnsClient -ConnectionSpecificSuffix $env:USERDNSDOMAIN).InterfaceIndex
-
-    $env:px_listen=$(Get-NetIPAddress -InterfaceIndex $IF -AddressFamily IPv4).IPAddress
-
-    $env:http_proxy='http://'+$env:px_listen+':3128'
-
-    Write-Host 'Enterprise Proxy'$env:px_server
-
-    Write-Host 'Px Proxy'$env:http_proxy
-
-    $env:px_username=$env:USERDOMAIN+'\'+$env:USERNAME
-
-    Write-Host 'Px username'$env:px_username
-
-    Start-Process -Verb open -WorkingDirectory px cmd.exe -ArgumentList "/c", "px.exe", "--server=$env:px_server", "--listen=$env:px_listen", "--user=$env:px_username", "--foreground", "--debug"}
-    else {Write-Host "Failed to start Px server $env:px_server :("}
-}
-
-Function Stop-Px {
-    Start-Process -Verb open -WorkingDirectory px px.exe -ArgumentList "--quit"
-}
+#endregion
 
 Function Set-Rootpw {
     param (
-    [string]$Title = 'Password Menu'
+    [string]$VmName 
 )     
     do
         {
             Clear-Host
-            Write-Host "========================= $Title ======================="
+            Write-Host "========================= $VmName ======================="
             Write-Host "======Set Password as rootpw Environment Variable======="
             if($env:rootpw.Length -gt 0)
             {        
@@ -86,7 +29,7 @@ Function Set-Rootpw {
                 $selection = Read-Host " No password exist as `$env:rootpw, Default Generate"
                 If($selection -eq "r") 
                 {
-                    Show-packerMenu $Title
+                    Edit-Template $VmName
                     break
                }
                         switch ($selection)
@@ -97,12 +40,11 @@ Function Set-Rootpw {
                                                 default {
                                                     Write-Host " Generate CentOS password..."
                                                     Write-Host " Set CentOS password for root"
-                                                    $password = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".tochararray()
-                                                    $env:rootpw = ($password | Get-Random -count 8) -join ''
+                                                    $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
                                                 } 
                                             }
             }   
-                $centosFile = ".centos_passwd"
+                $centosFile = ".${VmName}_rootpw"
                 Write-Output "CentOS system user password (root): $env:rootpw"  | Out-File $centosFile
                 if ($?) {
                     Write-Host " Adding credentials to $centosFile"}
@@ -110,10 +52,39 @@ Function Set-Rootpw {
                     Clear-Host    
         } while (([string]::IsNullOrEmpty($env:rootpw)))
     }
-function Show-packerMenu
+
+    Function Get-Hostname {
+        param (
+        [string]$Hostname
+    )     
+        do
+            {
+                Clear-Host
+                Write-Host "========================= Hostname Menu ======================="
+                Write-Host "======Get Hostname VM================"
+                    Write-Host " Press '1' Mannually: $Hostname-<XXX>"
+                    Write-Host " Press 'r' Return."
+                    $selection = Read-Host " Default Generate:"
+                            switch ($selection)
+                                                {
+                                                    '1' {
+                                                        $env:rootpw= Read-Host -Prompt "Enter root password ?"
+                                                    }
+                                                    default {
+                                                        Write-Host " Generate VM Hostname..."
+                                                        Write-Host " Set Hostname for VM"
+                                                        $Id = -join ((65..90) | Get-Random -Count 3 | ForEach-Object {[char]$_})
+                                                        return "$Hostname-$Id".ToUpperInvariant()
+                                                    } 
+                                                }  
+                        Pause
+                        Clear-Host    
+            } while (-not ([string]::IsNullOrEmpty($selection)))
+        }
+function Edit-Template
 {
     param (
-        [string]$Title = 'Packer Menu'
+        [string]$Title = 'Edit Packer Menu'
     )
     do
 {
@@ -130,25 +101,38 @@ function Show-packerMenu
         Show-proxyMenu
         break
    }
+            $InlineScriptPermission="chmod -R a+rx /tmp/scripts" 
+            $InlineScriptProxy="/tmp/scripts/yumConf.sh `"{{user ``proxy``}}`" "
+            $InlineScriptUpdateOS="/tmp/scripts/yumUpdateOS.sh"
+            $InlineScriptHostname="/tmp/scripts/setHostname.sh `"{{user ``hostname``}}`" `"{{user ``dnsuffix``}}`" "            
+            $InlineScriptTuleap="/tmp/scripts/yumInstallTuleap.sh"
+            $InlineScriptLdap="/tmp/scripts/ldapPlugin.sh"
+            
+
     switch ($selection)
     {
         '0' {
-            $TemplateType="CentOS"
-            $TemplateJsonFile="packerConfigCentos.json"
+            $VmName=Get-Hostname "CentOS"
+            Write-Host "VMName $VmName "
+            $TemplateJsonFile = "packerConfig-${VmName}.json"
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
-            
-            $Json.provisioners[1].inline = 'chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh'
+
+            $Json.variables.Hostname=$VmName
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
             
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return @($TemplateType,$TemplateJsonFile)
+            return @($VmName,$TemplateJsonFile)
         }
         '1' {
-            $TemplateType="Tuleap"
-            $TemplateJsonFile="packerConfigTuleap.json"
+            $VmName=Get-Hostname "Tuleap"
+            Write-Host "VMName $VmName "
+            $TemplateJsonFile = "packerConfig-${VmName}.json"
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+
+            $Json.variables.Hostname=$VmName
             
             $Json.provisioners += @{}
             $Json.provisioners += @{}
@@ -156,12 +140,12 @@ function Show-packerMenu
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
             
-            $Json.provisioners[1].inline = 'chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh'
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value '/tmp/scripts/yumInstallTuleap.sh'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value $InlineScriptTuleap
             
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
@@ -170,12 +154,15 @@ function Show-packerMenu
             
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return @($TemplateType,$TemplateJsonFile)
+            return @($VmName,$TemplateJsonFile)
         } 
         '2' {
-            $TemplateType="Ldap"
-            $TemplateJsonFile="packerConfigLdap.json"
+            $VmName=Get-Hostname "Ldap"
+            Write-Host "VMName $VmName "
+            $TemplateJsonFile = "packerConfig-${VmName}.json"
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+
+            $Json.variables.Hostname=$VmName
 
             $Json.provisioners += @{}
             $Json.provisioners += @{}
@@ -183,12 +170,12 @@ function Show-packerMenu
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
             
-            $Json.provisioners[1].inline = 'chmod -R a+rx /tmp/scripts && /tmp/scripts/yumConf.sh && /tmp/scripts/setHostname.sh && /tmp/scripts/yumUpdateOS.sh'
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value '/tmp/scripts/yumInstallTuleap.sh'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptTuleap && $InlineScriptLdap"
             
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
@@ -197,17 +184,20 @@ function Show-packerMenu
             
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return @($TemplateType,$TemplateJsonFile)
+            return @($VmName,$TemplateJsonFile)
         } 
         default {
-            $TemplateType="Provisioners"
-            $TemplateJsonFile="packerConfigProvisioners.json"
+            $VmName=Get-Hostname "Provisioners"
+            Write-Host "VMName $VmName "
+            $TemplateJsonFile = "packerConfig-${VmName}.json"
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+
+            $Json.variables.Hostname=$VmName
             
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return @($TemplateType,$TemplateJsonFile)
+            return @($VmName,$TemplateJsonFile)
         }  
     }
     if (([string]::IsNullOrEmpty($selection))) {break}
@@ -217,19 +207,19 @@ function Show-packerMenu
 function CleanupPackage {
 
     param (
-        [string]$TemplateType
+        [string]$VmName
     )
     
     $outputFolder = "output-vmware-iso"
-    $outputFolderLast = "output-${TemplateType}"
-    $TemplateJsonFile = "packerConfig${TemplateType}.json"
+    $outputFolderLast = "output-${VmName}"
+    $TemplateJsonFile = "packerConfig-${VmName}.json"
     $tuleapFile = ".tuleap_passwd"
-    $centosFile = ".centos_passwd"
+    $centosFile = ".${VmName}_rootpw"
     
     Clear-Host
     Write-Host "======================== Cleanup & Package ==========================="
     Write-Host "Copying $centosFile, $tuleapFile, $TemplateJsonFile into $outputFolderLast Directory"
-    Write-Host "$TemplateType VM File will be removed from VMware Workstation Library"
+    Write-Host "$VmName VM File will be removed from VMware Workstation Library"
 
 	if (Test-Path $outputFolder) {
         if (Test-Path $tuleapFile) { Move-Item $tuleapFile $outputFolder }
@@ -256,17 +246,17 @@ param (
     [string]$Title = 'Packer Menu'
 ) 
 
-     $Template=Show-packerMenu $Title
-     $TemplateType= $Template[0]
+     $Template=Edit-Template $Title
+     $VmName= $Template[0]
      $TemplateJsonFile = $Template[1] 
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
-     $host.ui.RawUI.WindowTitle = "Packer Build Template ($TemplateType)" 
-     Set-Rootpw $Title
-     Write-Host "Creating $TemplateTypepacker VM Image > packer build $TemplateJsonFile" 
+     $host.ui.RawUI.WindowTitle = "Packer Build Template ($VmName)" 
+     Set-Rootpw $VmName
+     Write-Host "Creating $VmName VM Image > packer build $TemplateJsonFile"
      invoke-expression  "packer build $TemplateJsonFile"
      Read-Host ' Press Enter to re-package artifacts into new Directory...'
-     CleanupPackage $TemplateType
+     CleanupPackage $VmName
      Pause
  }
 
@@ -277,7 +267,7 @@ Function BuildProxy {
         [switch] $proxy=$false
     )
     if($proxy) {
-        Start-Px(Test-Px)
+        if (Add-PXCredential) {Start-Px(Test-Px)}
         BuildPacker "Packer Build Tuleap Using Px Proxy"
         Stop-Px
     } elseif (-not $proxy) {
@@ -297,10 +287,10 @@ function Show-proxyMenu
     Clear-Host
     Write-Host "================ $Title ================"
     
-    Write-Host " Press 'y' Proxy Internet."
+    Write-Host " Press 'y' Proxy (default http_proxy=$env:http_proxy)"
     Write-Host " Press 'x' Exit."
 
-    $selection = Read-Host " Press Any Key: Default Direct Internet."
+    $selection = Read-Host " Press Any Key: Default No Proxy."
     If($selection -eq "x") 
     {
         $selection=$null

@@ -27,7 +27,7 @@ if [[ -n "$proxy" ]]
 then
 echo "proxy="$proxy >> /etc/yum.conf
 echo "INSTALLER: Proxy settings: "$proxy" will be used for yum.conf."
-sslverify
+sslVerify
 else
 echo "INSTALLER: No Proxy settings will be used for yum.conf."     
 fi    
