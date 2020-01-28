@@ -1,8 +1,9 @@
-TULEAP VM Builder (VMware Workstation)
+DevOps Prime VM Builder (VMware Workstation)
 ===============================
 
-Welcome to the packer build for tuleap vm.  
-This will build a Tuleap ALM and configure Active Directory for users login.  Follow the download instructions to download the software to install and follow the build instructions to build the machine.  You will need around 3 Gb of space free to store the downloads and run the build.
+Welcome to the packer build for VMware Workstation.  
+This will build a VM toolchain for DevOps tools as: 
+1) Tuleap ALM and configure Active Directory for users login.  Follow the download instructions to download the software to install and follow the build instructions to build the machine.  You will need around 3 Gb of space free to store the downloads and run the build.
 For getting accees to enterprise internet you can use px server that support  ntlm auth. 
 
 There are several directories which are used in the build
