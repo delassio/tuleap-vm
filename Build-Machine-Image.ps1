@@ -1,4 +1,4 @@
-# Import PxServer Function
+# Import Px Proxy Server Function
 
 # region Include required files
 #
@@ -308,10 +308,10 @@ function Show-proxyMenu
  until (-not ([string]::IsNullOrEmpty($selection)))
 }
 
-function BuildTuleap
+function BuildMachineImage
 {
 param (
-    [string]$Title = 'Tuleap VM Image'
+    [string]$Title = 'Build Machine Image'
 ) 
 
 $host.ui.RawUI.WindowTitle=$Title
@@ -319,4 +319,4 @@ Show-proxyMenu "Network Proxy Settings"
 
 }
 
-BuildTuleap
+BuildMachineImage
