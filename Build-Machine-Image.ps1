@@ -94,6 +94,7 @@ function Edit-Template
     Write-Host " Press '0' CentOS."
     Write-Host " Press '1' Tuleap."
     Write-Host " Press '2' Ldap."
+    Write-Host " Press '3' Oracle Linux 7."
     Write-Host " Press 'r' Return."
     $selection = Read-Host " Press Any Key: Default Packer Build Template"
     If($selection -eq "r") 
@@ -106,16 +107,16 @@ function Edit-Template
             $InlineScriptUpdateOS="/tmp/scripts/yumUpdateOS.sh"
             $InlineScriptHostname="/tmp/scripts/setHostname.sh `"{{user ``hostname``}}`" `"{{user ``dnsuffix``}}`" "            
             $InlineScriptTuleap="/tmp/scripts/yumInstallTuleap.sh"
-            $InlineScriptLdap="/tmp/scripts/ldapPlugin.sh"
+            $InlineScriptTuleapLdap="/tmp/scripts/ldapPlugin.sh"
             
 
     switch ($selection)
     {
         '0' {
-            $VmName=Get-Hostname "CentOS"
+            $VmName=Get-Hostname "CentOS-7"
             Write-Host "VMName $VmName "
-            $TemplateJsonFile = "packerConfig-${VmName}.json"
-            $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+            $TemplateJsonFile = "packer_templates\CentOS-7.json"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
 
             $Json.variables.Hostname=$VmName
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
@@ -129,7 +130,7 @@ function Edit-Template
         '1' {
             $VmName=Get-Hostname "Tuleap"
             Write-Host "VMName $VmName "
-            $TemplateJsonFile = "packerConfig-${VmName}.json"
+            $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
 
             $Json.variables.Hostname=$VmName
@@ -159,8 +160,8 @@ function Edit-Template
         '2' {
             $VmName=Get-Hostname "Ldap"
             Write-Host "VMName $VmName "
-            $TemplateJsonFile = "packerConfig-${VmName}.json"
-            $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+            $TemplateJsonFile = "packer_templates\CentOS-7.json"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
 
             $Json.variables.Hostname=$VmName
 
@@ -175,7 +176,7 @@ function Edit-Template
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptTuleap && $InlineScriptLdap"
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptTuleap && $InlineScriptTuleapLdap"
             
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
@@ -185,12 +186,27 @@ function Edit-Template
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
             return @($VmName,$TemplateJsonFile)
+        }
+        '3' {
+            $VmName=Get-Hostname "Oracle-Linux-7"
+            Write-Host "VMName $VmName "
+            $TemplateJsonFile = "packer_templates\CentOS-7.json"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
+
+            $Json.variables.Hostname=$VmName
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
+            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+            
+            $TempFile = New-TemporaryFile
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            Move-Item $TempFile $TemplateJsonFile
+            return @($VmName,$TemplateJsonFile)
         } 
         default {
             $VmName=Get-Hostname "Provisioners"
             Write-Host "VMName $VmName "
-            $TemplateJsonFile = "packerConfig-${VmName}.json"
-            $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
+            $TemplateJsonFile = "packer_templates\CentOS-7.json"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
 
             $Json.variables.Hostname=$VmName
             
