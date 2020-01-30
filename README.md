@@ -17,15 +17,15 @@ Mandatory Downloads
 -------------------
 **These two downloads are mandatory**.  If they are not here, the build will not start.
 
-* CentOS-7-x86_64-Minimal-1810.iso (needs to be this exactly md5 checked)
+* Iso media file inside directory 'put_files_here' 
 
 * Px programm px.exe for ntlm proxy
 
 Build Instructions
 ------------------
-run Tuleap.ink shortcut 
+run shortcut to be done 
 
-or from cmd prompt run>  pwsh.exe -ExecutionPolicy Bypass -command ".\Build-Tuleap.ps1"
+or from cmd prompt run>  pwsh.exe -ExecutionPolicy Bypass -command ".\Build-Machine-Image.ps1"
 
 
 Build Structure
