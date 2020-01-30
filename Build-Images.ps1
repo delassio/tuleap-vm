@@ -4,7 +4,7 @@
 #
 $ScriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 try {
-    . ("$ScriptDirectory\PxServer.ps1")
+    . ("$ScriptDirectory\ProxyServer.ps1")
 }
 catch {
     Write-Host "Error while loading supporting PowerShell Scripts" 
