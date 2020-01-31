@@ -53,16 +53,16 @@ Function Set-Rootpw {
         } while (([string]::IsNullOrEmpty($env:rootpw)))
     }
 
-    Function Get-Hostname {
+    Function New-MachineImage {
         param (
-        [string]$Hostname
+        [string]$MachineImage
     )     
         do
             {
                 Clear-Host
-                Write-Host "========================= Hostname Menu ======================="
-                Write-Host "======Get Hostname VM================"
-                    Write-Host " Press '1' Mannually: $Hostname-<XXX>"
+                Write-Host "========================= New Machine Image Menu ======================="
+                Write-Host "======New VM Directory================"
+                    Write-Host " Press '1' Mannually: $MachineImage-<XXX>"
                     Write-Host " Press 'r' Return."
                     $selection = Read-Host " Default Generate:"
                             switch ($selection)
@@ -71,8 +71,8 @@ Function Set-Rootpw {
                                                         $env:rootpw= Read-Host -Prompt "Enter root password ?"
                                                     }
                                                     default {
-                                                        Write-Host " Generate VM Hostname..."
-                                                        Write-Host " Set Hostname for VM"
+                                                        Write-Host " Generate VM Name..."
+                                                        Write-Host " Set Name for VM"
                                                         $Id = -join ((65..90) | Get-Random -Count 3 | ForEach-Object {[char]$_})
                                                         return "$Hostname-$Id".ToUpperInvariant()
                                                     } 
@@ -113,7 +113,7 @@ function Edit-Template
     switch ($selection)
     {
         '0' {
-            $VmName=Get-Hostname "CentOS-7"
+            $VmName=New-MachineImage "CentOS-7"
             Write-Host "VMName $VmName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
@@ -128,7 +128,7 @@ function Edit-Template
             return @($VmName,$TemplateJsonFile)
         }
         '1' {
-            $VmName=Get-Hostname "Tuleap"
+            $VmName=New-MachineImage "Tuleap"
             Write-Host "VMName $VmName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
@@ -158,7 +158,7 @@ function Edit-Template
             return @($VmName,$TemplateJsonFile)
         } 
         '2' {
-            $VmName=Get-Hostname "Ldap"
+            $VmName=New-MachineImage "Ldap"
             Write-Host "VMName $VmName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
@@ -188,7 +188,7 @@ function Edit-Template
             return @($VmName,$TemplateJsonFile)
         }
         '3' {
-            $VmName=Get-Hostname "Oracle-Linux-7"
+            $VmName=New-MachineImage "Oracle-Linux-7"
             Write-Host "VMName $VmName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
@@ -203,7 +203,7 @@ function Edit-Template
             return @($VmName,$TemplateJsonFile)
         } 
         default {
-            $VmName=Get-Hostname "Provisioners"
+            $VmName=New-MachineImage "Provisioners"
             Write-Host "VMName $VmName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
