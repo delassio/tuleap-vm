@@ -29,7 +29,7 @@ Function Set-Rootpw {
                 $selection = Read-Host " No password exist as `$env:rootpw, Default Generate"
                 If($selection -eq "r") 
                 {
-                    New-Template $ImageName
+                    New-TemplateFile $ImageName
                     break
                }
                         switch ($selection)
@@ -54,7 +54,7 @@ Function Set-Rootpw {
         } while (([string]::IsNullOrEmpty($env:rootpw)))
     }
 
-    Function New-MachineImage {
+    Function New-ImageDirectory {
         param (
         [string]$MachineImage
     )     
@@ -82,7 +82,7 @@ Function Set-Rootpw {
                         Clear-Host    
             } while (-not ([string]::IsNullOrEmpty($selection)))
         }
-function New-Template
+function New-TemplateFile
 {
     param (
         [string]$Title = 'Edit Packer Menu'
@@ -110,7 +110,7 @@ function New-Template
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
             
-            $ImageName=New-MachineImage "Image_VM"
+            $ImageName=New-ImageDirectory "Image_VM"
             Write-Host "ImageName $ImageName "
             $TemplateJsonFile = "packer_templates\Template.json"
             $NewTemplateJsonFile = "${ImageName}.json"
@@ -204,7 +204,7 @@ param (
     [string]$Title = 'Packer Menu'
 ) 
 
-     $Template=New-Template $Title
+     $Template=New-TemplateFile $Title
      $ImageName= $Template[0]
      $TemplateJsonFile = $Template[1]
      New-Item -Name $ImageName -ItemType Directory
