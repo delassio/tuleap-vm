@@ -110,33 +110,21 @@ function New-Template
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
             
+            $ImageName=New-MachineImage "Image_VM"
+            Write-Host "ImageName $ImageName "
+            $TemplateJsonFile = "packer_templates\Template.json"
+            $NewTemplateJsonFile = "${ImageName}.json"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
 
     switch ($selection)
     {
         '0' {
-            $ImageName=New-MachineImage "CentOS-7"
-            Write-Host "ImageName $ImageName "
-            $TemplateJsonFile = "packer_templates\CentOS-7.json"
-            $NewTemplateJsonFile = "${ImageName}.json"
-            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
-
-            $Json.variables.Hostname=$ImageName
+            $Json.variables.Hostname="CentOS${ImageName}"
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
-            
-            $TempFile = New-TemporaryFile
-            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            Move-Item $TempFile $NewTemplateJsonFile
-            return @($ImageName,$NewTemplateJsonFile)
         }
         '1' {
-            $ImageName=New-MachineImage "Tuleap"
-            Write-Host "ImageName $ImageName "
-            $TemplateJsonFile = "packer_templates\CentOS-7.json"
-            $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
-
-            $Json.variables.Hostname=$ImageName
-            
+            $Json.variables.Hostname="Tuleap${ImageName}"            
             $Json.provisioners += @{}
             $Json.provisioners += @{}
             $TempFile = New-TemporaryFile
@@ -154,19 +142,9 @@ function New-Template
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
-            
-            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            Move-Item $TempFile $TemplateJsonFile
-            return @($ImageName,$TemplateJsonFile)
         } 
         '2' {
-            $ImageName=New-MachineImage "Ldap"
-            Write-Host "ImageName $ImageName "
-            $TemplateJsonFile = "packer_templates\CentOS-7.json"
-            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
-
-            $Json.variables.Hostname=$ImageName
-
+            $Json.variables.Hostname="Tuleap_LDAP${ImageName}"
             $Json.provisioners += @{}
             $Json.provisioners += @{}
             $TempFile = New-TemporaryFile
@@ -184,40 +162,20 @@ function New-Template
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
-            
-            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            Move-Item $TempFile $TemplateJsonFile
-            return @($ImageName,$TemplateJsonFile)
         }
         '3' {
-            $ImageName=New-MachineImage "Oracle-Linux-7"
-            Write-Host "ImageName $ImageName "
-            $TemplateJsonFile = "packer_templates\CentOS-7.json"
-            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
-
-            $Json.variables.Hostname=$ImageName
+            $Json.variables.Hostname="OracleLinux${ImageName}"
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
-            
-            $TempFile = New-TemporaryFile
-            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            Move-Item $TempFile $TemplateJsonFile
-            return @($ImageName,$TemplateJsonFile)
         } 
-        default {
-            $ImageName=New-MachineImage "Provisioners"
-            Write-Host "ImageName $ImageName "
-            $TemplateJsonFile = "packer_templates\CentOS-7.json"
-            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
-
-            $Json.variables.Hostname=$ImageName
-            
-            $TempFile = New-TemporaryFile
-            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            Move-Item $TempFile $TemplateJsonFile
-            return @($ImageName,$TemplateJsonFile)
+        default {        
         }  
     }
+    $TempFile = New-TemporaryFile
+    $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+    Move-Item $TempFile $NewTemplateJsonFile
+    return @($ImageName,$NewTemplateJsonFile)
+
     if (([string]::IsNullOrEmpty($selection))) {break}
 } until (-not ([string]::IsNullOrEmpty($selection)))
 }
@@ -225,37 +183,19 @@ function New-Template
 function CleanupPackage {
 
     param (
-        [string]$ImageName
+        [string]$ImageNameDirectory
     )
     
     $outputFolder = "output-vmware-iso"
-    $outputFolderLast = "output-${ImageName}"
-    $TemplateJsonFile = "packerConfig-${ImageName}.json"
-    $tuleapFile = ".tuleap_passwd"
-    $centosFile = ".${ImageName}_rootpw"
+    $newoutputFolder = "output-${ImageNameDirectory}"
     
     Clear-Host
     Write-Host "======================== Cleanup & Package ==========================="
-    Write-Host "Copying $centosFile, $tuleapFile, $TemplateJsonFile into $outputFolderLast Directory"
-    Write-Host "$ImageName VM File will be removed from VMware Workstation Library"
 
 	if (Test-Path $outputFolder) {
-        if (Test-Path $tuleapFile) { Move-Item $tuleapFile $outputFolder }
-        if (Test-Path $centosFile) { Move-Item $centosFile $outputFolder }
-        if (Test-Path $TemplateJsonFile) { Move-Item $TemplateJsonFile $outputFolder }
-        Move-Item $outputFolder $outputFolderLast -Force
-    } else 
-
-    {
-
-    if (Test-Path $tuleapFile) {
-        Remove-Item $tuleapFile -Force
-    }
-
-    if (Test-Path $centosFile) {
-        Remove-Item $centosFile -Force
-    }
-    }
+        Move-Item $outputFolder $newoutputFolder -Force
+        Move-Item -path $newoutputFolder -Destination $ImageNameDirectory
+    } 
 }
 
 function BuildPacker

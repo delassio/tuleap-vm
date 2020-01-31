@@ -1,10 +1,10 @@
 {
 "variables": {
-"guest_os_type": "centos7-64",
-"floppy_files": "kickstart/centos7/ks.cfg",
-"iso_url": "put_files_here/CentOS-7-x86_64-Minimal-1908.iso",
+"guest_os_type": "",
+"floppy_files": "",
+"iso_url": "put_files_here/",
 "iso_checksum_type": "sha256",
-"iso_checksum": "9a2c47d97b9975452f7d582264e9fc16d108ed8252ac6816239a3b58cef5c53d",
+"iso_checksum": "",
 "ssh_username": "root",
 "ssh_password": "{{env `rootpw`}}",
 "hostname": "",
