@@ -13,12 +13,12 @@ catch {
 
 Function Set-Rootpw {
     param (
-    [string]$VmName 
+    [string]$ImageName 
 )     
     do
         {
             Clear-Host
-            Write-Host "========================= $VmName ======================="
+            Write-Host "========================= $ImageName ======================="
             Write-Host "======Set Password as rootpw Environment Variable======="
             if($env:rootpw.Length -gt 0)
             {        
@@ -29,7 +29,7 @@ Function Set-Rootpw {
                 $selection = Read-Host " No password exist as `$env:rootpw, Default Generate"
                 If($selection -eq "r") 
                 {
-                    Edit-Template $VmName
+                    New-Template $ImageName
                     break
                }
                         switch ($selection)
@@ -44,11 +44,11 @@ Function Set-Rootpw {
                                                 } 
                                             }
             }   
-                $rootpwFile = ".rootpw_${VmName}"
+                $rootpwFile = ".rootpw_${ImageName}"
                 Write-Output "CentOS system user password (root): $env:rootpw"  | Out-File $rootpwFile
                 if ($?) {
                     Write-Host " Adding credentials to $rootpwFile"}
-                    Move-Item -path $rootpwFile -Destination $VmName
+                    Move-Item -path $rootpwFile -Destination $ImageName
                     Pause
                     Clear-Host    
         } while (([string]::IsNullOrEmpty($env:rootpw)))
@@ -82,7 +82,7 @@ Function Set-Rootpw {
                         Clear-Host    
             } while (-not ([string]::IsNullOrEmpty($selection)))
         }
-function Edit-Template
+function New-Template
 {
     param (
         [string]$Title = 'Edit Packer Menu'
@@ -114,27 +114,28 @@ function Edit-Template
     switch ($selection)
     {
         '0' {
-            $VmName=New-MachineImage "CentOS-7"
-            Write-Host "VMName $VmName "
+            $ImageName=New-MachineImage "CentOS-7"
+            Write-Host "ImageName $ImageName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
+            $NewTemplateJsonFile = "${ImageName}.json"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
 
-            $Json.variables.Hostname=$VmName
+            $Json.variables.Hostname=$ImageName
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
             
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            Move-Item $TempFile $TemplateJsonFile
-            return @($VmName,$TemplateJsonFile)
+            Move-Item $TempFile $NewTemplateJsonFile
+            return @($ImageName,$NewTemplateJsonFile)
         }
         '1' {
-            $VmName=New-MachineImage "Tuleap"
-            Write-Host "VMName $VmName "
+            $ImageName=New-MachineImage "Tuleap"
+            Write-Host "ImageName $ImageName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content 'packerConfig.json' | Out-String  | ConvertFrom-Json
 
-            $Json.variables.Hostname=$VmName
+            $Json.variables.Hostname=$ImageName
             
             $Json.provisioners += @{}
             $Json.provisioners += @{}
@@ -156,15 +157,15 @@ function Edit-Template
             
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return @($VmName,$TemplateJsonFile)
+            return @($ImageName,$TemplateJsonFile)
         } 
         '2' {
-            $VmName=New-MachineImage "Ldap"
-            Write-Host "VMName $VmName "
+            $ImageName=New-MachineImage "Ldap"
+            Write-Host "ImageName $ImageName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
 
-            $Json.variables.Hostname=$VmName
+            $Json.variables.Hostname=$ImageName
 
             $Json.provisioners += @{}
             $Json.provisioners += @{}
@@ -186,35 +187,35 @@ function Edit-Template
             
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return @($VmName,$TemplateJsonFile)
+            return @($ImageName,$TemplateJsonFile)
         }
         '3' {
-            $VmName=New-MachineImage "Oracle-Linux-7"
-            Write-Host "VMName $VmName "
+            $ImageName=New-MachineImage "Oracle-Linux-7"
+            Write-Host "ImageName $ImageName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
 
-            $Json.variables.Hostname=$VmName
+            $Json.variables.Hostname=$ImageName
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
             
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return @($VmName,$TemplateJsonFile)
+            return @($ImageName,$TemplateJsonFile)
         } 
         default {
-            $VmName=New-MachineImage "Provisioners"
-            Write-Host "VMName $VmName "
+            $ImageName=New-MachineImage "Provisioners"
+            Write-Host "ImageName $ImageName "
             $TemplateJsonFile = "packer_templates\CentOS-7.json"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
 
-            $Json.variables.Hostname=$VmName
+            $Json.variables.Hostname=$ImageName
             
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             Move-Item $TempFile $TemplateJsonFile
-            return @($VmName,$TemplateJsonFile)
+            return @($ImageName,$TemplateJsonFile)
         }  
     }
     if (([string]::IsNullOrEmpty($selection))) {break}
@@ -224,19 +225,19 @@ function Edit-Template
 function CleanupPackage {
 
     param (
-        [string]$VmName
+        [string]$ImageName
     )
     
     $outputFolder = "output-vmware-iso"
-    $outputFolderLast = "output-${VmName}"
-    $TemplateJsonFile = "packerConfig-${VmName}.json"
+    $outputFolderLast = "output-${ImageName}"
+    $TemplateJsonFile = "packerConfig-${ImageName}.json"
     $tuleapFile = ".tuleap_passwd"
-    $centosFile = ".${VmName}_rootpw"
+    $centosFile = ".${ImageName}_rootpw"
     
     Clear-Host
     Write-Host "======================== Cleanup & Package ==========================="
     Write-Host "Copying $centosFile, $tuleapFile, $TemplateJsonFile into $outputFolderLast Directory"
-    Write-Host "$VmName VM File will be removed from VMware Workstation Library"
+    Write-Host "$ImageName VM File will be removed from VMware Workstation Library"
 
 	if (Test-Path $outputFolder) {
         if (Test-Path $tuleapFile) { Move-Item $tuleapFile $outputFolder }
@@ -263,18 +264,19 @@ param (
     [string]$Title = 'Packer Menu'
 ) 
 
-     $Template=Edit-Template $Title
-     $VmName= $Template[0]
+     $Template=New-Template $Title
+     $ImageName= $Template[0]
      $TemplateJsonFile = $Template[1]
-     New-Item -Name $VmName -ItemType Directory
+     New-Item -Name $ImageName -ItemType Directory
+     Move-Item -path $TemplateJsonFile -Destination $ImageName
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
-     $host.ui.RawUI.WindowTitle = "Packer Build Template ($VmName)" 
-     Set-Rootpw $VmName
-     Write-Host "Creating $VmName VM Image > packer build $TemplateJsonFile"
-     invoke-expression  "packer build $TemplateJsonFile"
+     $host.ui.RawUI.WindowTitle = "Packer Build Template ($ImageName)" 
+     Set-Rootpw $ImageName
+     Write-Host "Creating $ImageName VM Image > packer build $ImageName/$TemplateJsonFile"
+     invoke-expression  "packer build $ImageName/$TemplateJsonFile"
      Read-Host ' Press Enter to re-package artifacts into new Directory...'
-     CleanupPackage $VmName
+     CleanupPackage $ImageName
      Pause
  }
 
