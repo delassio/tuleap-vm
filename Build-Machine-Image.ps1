@@ -56,20 +56,20 @@ Function Set-Rootpw {
 
     Function New-ImageDirectory {
         param (
-        [string]$MachineImage
+        [string]$MachineImage 
     )     
         do
             {
                 Clear-Host
                 Write-Host "========================= New Machine Image Menu ======================="
                 Write-Host "======New VM Directory================"
-                    Write-Host " Press '1' Mannually: $MachineImage-<XXX>"
+                    Write-Host " Press '1' Manually: $MachineImage-<XXX>"
                     Write-Host " Press 'r' Return."
                     $selection = Read-Host " Default Generate:"
                             switch ($selection)
                                                 {
                                                     '1' {
-                                                        $env:rootpw= Read-Host -Prompt "Enter root password ?"
+                                                        $selection = Read-Host -Prompt "Enter Image Directory ?"
                                                     }
                                                     default {
                                                         Write-Host " Generate VM Name..."
@@ -85,24 +85,8 @@ Function Set-Rootpw {
 function New-TemplateFile
 {
     param (
-        [string]$Title = 'Edit Packer Menu'
+        [string]$packerConfigFile
     )
-    do
-{
-    Clear-Host
-    Write-Host "================ $Title ================"
-    
-    Write-Host " Press '0' CentOS."
-    Write-Host " Press '1' Tuleap."
-    Write-Host " Press '2' Ldap."
-    Write-Host " Press '3' Oracle Linux 7."
-    Write-Host " Press 'r' Return."
-    $selection = Read-Host " Press Any Key: Default Packer Build Template"
-    If($selection -eq "r") 
-    {
-        Show-proxyMenu
-        break
-   }
             $InlineScriptPermission="chmod -R a+rx /tmp" 
             $InlineScriptProxy="/tmp/linux/yumConf.sh `"{{user ``proxy``}}`" "
             $InlineScriptUpdateOS="/tmp/linux/yumUpdateOS.sh"
@@ -110,21 +94,31 @@ function New-TemplateFile
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
             
-            $ImageName=New-ImageDirectory "Image_VM"
-            Write-Host "ImageName $ImageName "
             $TemplateJsonFile = "packer_templates\Template.json"
-            $NewTemplateJsonFile = "${ImageName}.json"
-            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
+            $NewTemplateJsonFile = "${packerConfigFile}.json"
 
-    switch ($selection)
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
+            $Json.variables.Hostname="${packerConfigFile}" 
+
+    switch ($packerConfigFile)
     {
-        '0' {
-            $Json.variables.Hostname="CentOS${ImageName}"
+        'centos' {
+            $Json.variables.guest_os_type="centos7-64"
+            $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
+            $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-1908.iso"
+            $Json.variables.iso_checksum="9a2c47d97b9975452f7d582264e9fc16d108ed8252ac6816239a3b58cef5c53d"
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
-        '1' {
-            $Json.variables.Hostname="Tuleap${ImageName}"            
+        'oraclelinux' {
+            $Json.variables.guest_os_type="oraclelinux7-64"
+            $Json.variables.floppy_files="kickstart/oraclelinux7/ks.cfg"
+            $Json.variables.iso_url="put_files_here/V983339-01.iso"
+            $Json.variables.iso_checksum="1D06CEF6A518C32C0E7ADCAD0A99A8EFBC7516066DE41118EBF49002C15EA84D"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
+            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+        } 
+        'tuleap' {         
             $Json.provisioners += @{}
             $Json.provisioners += @{}
             $TempFile = New-TemporaryFile
@@ -143,8 +137,7 @@ function New-TemplateFile
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
         } 
-        '2' {
-            $Json.variables.Hostname="Tuleap_LDAP${ImageName}"
+        'tuleapldap' {
             $Json.provisioners += @{}
             $Json.provisioners += @{}
             $TempFile = New-TemporaryFile
@@ -163,21 +156,13 @@ function New-TemplateFile
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
         }
-        '3' {
-            $Json.variables.Hostname="OracleLinux${ImageName}"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
-            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
-        } 
         default {        
         }  
     }
     $TempFile = New-TemporaryFile
     $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
     Move-Item $TempFile $NewTemplateJsonFile
-    return @($ImageName,$NewTemplateJsonFile)
-
-    if (([string]::IsNullOrEmpty($selection))) {break}
-} until (-not ([string]::IsNullOrEmpty($selection)))
+    return $NewTemplateJsonFile
 }
 
 function CleanupPackage {
@@ -202,21 +187,67 @@ function BuildPacker
 {
 param (
     [string]$Title = 'Packer Menu'
-) 
+)
 
-     $Template=New-TemplateFile $Title
-     $ImageName= $Template[0]
-     $TemplateJsonFile = $Template[1]
-     New-Item -Name $ImageName -ItemType Directory
-     Move-Item -path $TemplateJsonFile -Destination $ImageName
+do
+{
+    Clear-Host
+    Write-Host "================ $Title ================"
+    
+    Write-Host " Press '0' CentOS."
+    Write-Host " Press '1' Oracle Linux 7.."
+    Write-Host " Press '2' Tuleap."
+    Write-Host " Press '3' Tuleap LDAP."
+    Write-Host " Press 'r' Return."
+    $selection = Read-Host " Press Any Key: Default Packer Build Template"
+    If($selection -eq "r") 
+    {
+        Show-proxyMenu
+        break
+   }
+    switch ($selection)
+    {
+        '0' {
+            $TemplateFile=New-TemplateFile "centos"
+            $ImageDirectory= New-ImageDirectory "CentOS"
+            New-Item -Name $ImageDirectory -ItemType Directory
+            Move-Item -path $TemplateFile -Destination $ImageDirectory
+        }
+        '1' {
+            $TemplateFile=New-TemplateFile "oraclelinux"
+            $ImageDirectory= New-ImageDirectory "Oracle"
+            New-Item -Name $ImageDirectory -ItemType Directory
+            Move-Item -path $TemplateFile -Destination $ImageDirectory
+        } 
+        '2' {
+            $TemplateFile=New-TemplateFile "tuleap"
+            $ImageDirectory= New-ImageDirectory "Tuleap"
+            New-Item -Name $ImageDirectory -ItemType Directory
+            Move-Item -path $TemplateFile -Destination $ImageDirectory
+        }
+        '3' {
+            $TemplateFile=New-TemplateFile "tuleapldap"
+            $ImageDirectory= New-ImageDirectory "Tuleap"
+            New-Item -Name $ImageDirectory -ItemType Directory
+            Move-Item -path $TemplateFile -Destination $ImageDirectory
+        } 
+        default {
+            $TemplateFile=New-TemplateFile "centos"
+            $ImageDirectory= New-ImageDirectory "CentOS"
+            New-Item -Name $ImageDirectory -ItemType Directory
+            Move-Item -path $TemplateFile -Destination $ImageDirectory    
+        }  
+    }
+    if (([string]::IsNullOrEmpty($selection))) {break}
+} until (-not ([string]::IsNullOrEmpty($selection)))
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
      $host.ui.RawUI.WindowTitle = "Packer Build Template ($ImageName)" 
-     Set-Rootpw $ImageName
-     Write-Host "Creating $ImageName VM Image > packer build $ImageName/$TemplateJsonFile"
-     invoke-expression  "packer build $ImageName/$TemplateJsonFile"
+     Set-Rootpw $ImageDirectory
+     Write-Host "Creating VM Image > packer build $ImageDirectory/$TemplateFile"
+     invoke-expression  "packer build $ImageDirectory/$TemplateFile"
      Read-Host ' Press Enter to re-package artifacts into new Directory...'
-     CleanupPackage $ImageName
+     CleanupPackage $ImageDirectory
      Pause
  }
 
