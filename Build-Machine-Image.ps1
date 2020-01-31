@@ -29,7 +29,6 @@ Function Set-Rootpw {
                 $selection = Read-Host " No password exist as `$env:rootpw, Default Generate"
                 If($selection -eq "r") 
                 {
-                    New-TemplateFile $ImageName
                     break
                }
                         switch ($selection)
@@ -56,28 +55,27 @@ Function Set-Rootpw {
 
     Function New-ImageDirectory {
         param (
-        [string]$MachineImage 
+        [string]$DirectoryName 
     )     
         do
             {
                 Clear-Host
                 Write-Host "========================= New Machine Image Menu ======================="
                 Write-Host "======New VM Directory================"
-                    Write-Host " Press '1' Manually: $MachineImage-<XXX>"
+                    Write-Host " Press '1' Manually: $DirectoryName-<XXX>"
                     Write-Host " Press 'r' Return."
                     $selection = Read-Host " Default Generate:"
                             switch ($selection)
                                                 {
                                                     '1' {
-                                                        $selection = Read-Host -Prompt "Enter Image Directory ?"
+                                                        $Id = Read-Host -Prompt "Complete Name $DirectoryName"
                                                     }
                                                     default {
                                                         Write-Host " Generate VM Name..."
-                                                        Write-Host " Set Name for VM"
-                                                        $Id = -join ((65..90) | Get-Random -Count 3 | ForEach-Object {[char]$_})
-                                                        return "$MachineImage-$Id".ToUpperInvariant()
+                                                        $Id = -join ((65..90) | Get-Random -Count 3 | ForEach-Object {[char]$_})                                                        
                                                     } 
-                                                }  
+                                                }
+                                                return "$DirectoryName-$Id".ToUpperInvariant()  
                         Pause
                         Clear-Host    
             } while (-not ([string]::IsNullOrEmpty($selection)))
@@ -118,9 +116,13 @@ function New-TemplateFile
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         } 
-        'tuleap' {         
+        'tuleap' {
+            $TemplateJsonFile = New-TemplateFile "centos"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
+            Remove-Item $TemplateJsonFile
+
             $Json.provisioners += @{}
-            $Json.provisioners += @{}
+            $Json.provisioners += @{}       
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
@@ -138,8 +140,12 @@ function New-TemplateFile
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
         } 
         'tuleapldap' {
+            $TemplateJsonFile = New-TemplateFile "centos"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
+            Remove-Item $TemplateJsonFile
+            
             $Json.provisioners += @{}
-            $Json.provisioners += @{}
+            $Json.provisioners += @{}   
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
