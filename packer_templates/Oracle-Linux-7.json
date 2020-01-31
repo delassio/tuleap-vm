@@ -22,10 +22,10 @@
   "ssh_password": "{{ user `ssh_password` }}",
   "ssh_timeout": "120m",
   "floppy_files": [
-          "kickstart/oraclelinux7.cfg"
+          "kickstart/oraclelinux7/ks.cfg"
         ],
   "boot_command": [
-  "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/oraclelinux7.cfg <enter><wait>"
+  "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/ks.cfg <enter><wait>"
   ],
   "shutdown_command": "shutdown -P now",
   "shutdown_timeout": "120m"
@@ -35,13 +35,13 @@
 "provisioners": [  
   {
     "type": "file",
-    "source": "upload/",
+    "source": "script/",
     "destination": "/tmp"
   },
   {
     "type": "shell",
     "inline": [
-      "chmod -R a+rx /tmp/scripts && /tmp/scripts/setEnvironmentVariables.sh"
+      "chmod -R a+rx /tmp/linux && /tmp/linux/setEnvironmentVariables.sh"
     ],
 	"environment_vars": [
       "proxy={{user `proxy`}}",

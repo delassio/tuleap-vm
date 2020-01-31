@@ -44,10 +44,11 @@ Function Set-Rootpw {
                                                 } 
                                             }
             }   
-                $centosFile = ".${VmName}_rootpw"
-                Write-Output "CentOS system user password (root): $env:rootpw"  | Out-File $centosFile
+                $rootpwFile = ".rootpw_${VmName}"
+                Write-Output "CentOS system user password (root): $env:rootpw"  | Out-File $rootpwFile
                 if ($?) {
-                    Write-Host " Adding credentials to $centosFile"}
+                    Write-Host " Adding credentials to $rootpwFile"}
+                    Move-Item -path $rootpwFile -Destination $VmName
                     Pause
                     Clear-Host    
         } while (([string]::IsNullOrEmpty($env:rootpw)))
@@ -74,7 +75,7 @@ Function Set-Rootpw {
                                                         Write-Host " Generate VM Name..."
                                                         Write-Host " Set Name for VM"
                                                         $Id = -join ((65..90) | Get-Random -Count 3 | ForEach-Object {[char]$_})
-                                                        return "$Hostname-$Id".ToUpperInvariant()
+                                                        return "$MachineImage-$Id".ToUpperInvariant()
                                                     } 
                                                 }  
                         Pause
@@ -102,12 +103,12 @@ function Edit-Template
         Show-proxyMenu
         break
    }
-            $InlineScriptPermission="chmod -R a+rx /tmp/scripts" 
-            $InlineScriptProxy="/tmp/scripts/yumConf.sh `"{{user ``proxy``}}`" "
-            $InlineScriptUpdateOS="/tmp/scripts/yumUpdateOS.sh"
-            $InlineScriptHostname="/tmp/scripts/setHostname.sh `"{{user ``hostname``}}`" `"{{user ``dnsuffix``}}`" "            
-            $InlineScriptTuleap="/tmp/scripts/yumInstallTuleap.sh"
-            $InlineScriptTuleapLdap="/tmp/scripts/ldapPlugin.sh"
+            $InlineScriptPermission="chmod -R a+rx /tmp" 
+            $InlineScriptProxy="/tmp/linux/yumConf.sh `"{{user ``proxy``}}`" "
+            $InlineScriptUpdateOS="/tmp/linux/yumUpdateOS.sh"
+            $InlineScriptHostname="/tmp/linux/setHostname.sh `"{{user ``hostname``}}`" `"{{user ``dnsuffix``}}`" "            
+            $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
+            $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
             
 
     switch ($selection)
@@ -264,7 +265,8 @@ param (
 
      $Template=Edit-Template $Title
      $VmName= $Template[0]
-     $TemplateJsonFile = $Template[1] 
+     $TemplateJsonFile = $Template[1]
+     New-Item -Name $VmName -ItemType Directory
      $env:PACKER_LOG=1
      $env:PACKER_LOG_PATH="packerlog.txt"
      $host.ui.RawUI.WindowTitle = "Packer Build Template ($VmName)" 
@@ -284,10 +286,10 @@ Function BuildProxy {
     )
     if($proxy) {
         if (Add-PXCredential) {Start-Px(Test-Px)}
-        BuildPacker "Packer Build Tuleap Using Px Proxy"
+        BuildPacker "Packer Build Image Using Px Proxy"
         Stop-Px
     } elseif (-not $proxy) {
-        BuildPacker "Packer Build Tuleap Using Direct Internet"
+        BuildPacker "Packer Build Image Using Direct Internet"
     }
 
 }
