@@ -37,7 +37,7 @@
 "provisioners": [  
   {
     "type": "file",
-    "source": "script/",
+    "source": "upload/",
     "destination": "/tmp"
   },
   {

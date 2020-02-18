@@ -13,6 +13,8 @@
 *.exe
 *.out
 *.iso
+*.zip
+*.dmp
 
 
 ### Log ###

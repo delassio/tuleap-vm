@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-function sslVerify {
+function checkProxySSL {
 
 
 # Check proxy connectivity 
@@ -21,19 +21,19 @@ echo 'INSTALLER: yum verify SSL OK'
 fi
 }
 
-function proxyConf {
+function configYumProxy {
 # set proxy configuration 
 if [[ -n "$proxy" ]]
 then
 echo "proxy="$proxy >> /etc/yum.conf
 echo "INSTALLER: Proxy settings: "$proxy" will be used for yum.conf."
-sslVerify
+checkProxySSL
 else
 echo "INSTALLER: No Proxy settings will be used for yum.conf."     
 fi    
 }
 
-function yumMirror {
+function disableYumOption {
 
 echo 'INSTALLER: Disable yum fatestmirror plugin, mirrorlist' && \
 
@@ -45,5 +45,5 @@ sed -i -e "s|#baseurl=|baseurl=|"  /etc/yum.repos.d/CentOS-Base.repo
 
 }
 
-proxyConf
-yumMirror
+configYumProxy
+disableYumOption

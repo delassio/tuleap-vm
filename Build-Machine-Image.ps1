@@ -11,101 +11,92 @@ catch {
 }
 #endregion
 
-Function Set-Rootpw {
+Function Show-rootpwMenu {
     param (
-    [string]$ImageName 
+    [string]$Title= "VM SSH Root Password:" 
 )     
-    do
-        {
-            Clear-Host
-            Write-Host "========================= $ImageName ======================="
-            Write-Host "======Set Password as rootpw Environment Variable======="
-            if($env:rootpw.Length -gt 0)
-            {        
-            Write-Host "===Default `$env:rootpw ($env:rootpw)==="
-            } elseif ([string]::IsNullOrEmpty($env:rootpw)) {
-                Write-Host " Press '1' Set Mannually Password."
-                Write-Host " Press 'r' Return."
-                $selection = Read-Host " No password exist as `$env:rootpw, Default Generate"
-                If($selection -eq "r") 
-                {
-                    break
-               }
-                        switch ($selection)
-                                            {
-                                                '1' {
-                                                    $env:rootpw= Read-Host -Prompt "Enter root password ?"
-                                                }
-                                                default {
-                                                    Write-Host " Generate CentOS password..."
-                                                    Write-Host " Set CentOS password for root"
-                                                    $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
-                                                } 
-                                            }
-            }   
-                $rootpwFile = ".rootpw_${ImageName}"
-                Write-Output "CentOS system user password (root): $env:rootpw"  | Out-File $rootpwFile
-                if ($?) {
-                    Write-Host " Adding credentials to $rootpwFile"}
-                    Move-Item -path $rootpwFile -Destination $ImageName
-                    Pause
-                    Clear-Host    
-        } while (([string]::IsNullOrEmpty($env:rootpw)))
+            Write-Host "====== $Title [$env:rootpw] ======="
+            Write-Host " [6] Enter root password ?"
+            Write-Host " [7] Generate password ?"
     }
 
-    Function New-ImageDirectory {
+
+    Function Copy-rootpwDirectory {
         param (
-        [string]$DirectoryName 
+        [string]$imageMachineDirectory 
     )     
-        do
-            {
-                Clear-Host
-                Write-Host "========================= New Machine Image Menu ======================="
-                Write-Host "======New VM Directory================"
-                    Write-Host " Press '1' Manually: $DirectoryName-<XXX>"
-                    Write-Host " Press 'r' Return."
-                    $selection = Read-Host " Default Generate:"
-                            switch ($selection)
-                                                {
-                                                    '1' {
-                                                        $Id = Read-Host -Prompt "Complete Name $DirectoryName"
-                                                    }
-                                                    default {
-                                                        Write-Host " Generate VM Name..."
-                                                        $Id = -join ((65..90) | Get-Random -Count 3 | ForEach-Object {[char]$_})                                                        
-                                                    } 
-                                                }
-                                                return "$DirectoryName-$Id".ToUpperInvariant()  
-                        Pause
-                        Clear-Host    
-            } while (-not ([string]::IsNullOrEmpty($selection)))
+                    $rootpwFile = ".rootpw_${imageMachine}"
+                    Write-Output "SSH PASSWORD (root): $env:rootpw"  | Out-File $rootpwFile
+                    if ($?) {
+                    Write-Host " Adding credentials to $rootpwFile"}
+                    Move-Item -path $rootpwFile -Destination $imageMachineDirectory
         }
-function New-TemplateFile
+
+    Function Show-directoryMenu {
+        param (
+        [string]$Title= "Output Directory:"
+    )
+
+                 if ([string]::IsNullOrEmpty($env:build_output_directory)) {
+                    $env:build_output_directory = "vmware-iso"
+                } 
+
+                Write-Host "========================= $Title [ output-$env:build_output_directory-<Template> ] ======================="
+
+                Write-Host " [8] Enter output id ?"
+                Write-Host " [9] Generate: ?" 
+        }
+function New-TemplatePacker
 {
     param (
-        [string]$packerConfigFile
+        [string]$imageMachine
     )
             $InlineScriptPermission="chmod -R a+rx /tmp" 
-            $InlineScriptProxy="/tmp/linux/yumConf.sh `"{{user ``proxy``}}`" "
+            $InlineScriptProxy="/tmp/linux/yumConfigProxySSL.sh"
             $InlineScriptUpdateOS="/tmp/linux/yumUpdateOS.sh"
-            $InlineScriptHostname="/tmp/linux/setHostname.sh `"{{user ``hostname``}}`" `"{{user ``dnsuffix``}}`" "            
+            $InlineScriptHostname="/tmp/linux/setHostname.sh"            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
+            $InlineScriptDatabase="chmod -R a+rx /tmp/scripts/*.sh && /tmp/scripts/install.sh"
+
+            $EnvVarsDatabase=@( "ORACLE_BASE=/opt/oracle",
+                                "ORACLE_HOME=/opt/oracle/product/19c/dbhome",
+                                "ORACLE_SID=${env:oracle_db_name}",
+                                "ORACLE_CHARACTERSET=${env:oracle_db_characterSet}",
+                                "ORACLE_EDITION=SE2",
+                                "SYSTEM_TIMEZONE=${env:zoneinfo}")
             
             $TemplateJsonFile = "packer_templates\Template.json"
-            $NewTemplateJsonFile = "${packerConfigFile}.json"
 
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
-            $Json.variables.Hostname="${packerConfigFile}" 
+            
+            $Json.variables.Hostname="${imageMachine}"
+            $Json.variables.ssh_password="${env:rootpw}"
 
-    switch ($packerConfigFile)
+            if ([string]::IsNullOrEmpty($env:http_proxy))
+            {
+                $Json.variables.proxy=""
+            } else {
+                $Json.variables.proxy="${env:http_proxy}" 
+            }
+
+            if ([string]::IsNullOrEmpty($env:USERDNSDOMAIN))
+            {
+                $Json.variables.dnsuffix=""
+            } else {
+                $Json.variables.dnsuffix="${env:USERDNSDOMAIN}" 
+            }
+
+            $Json.builders[0] | Add-Member -Type NoteProperty -Name "output_directory" -Value "output-$env:build_output_directory-$imageMachine"
+
+    switch ($imageMachine)
     {
         'centos' {
             $Json.variables.guest_os_type="centos7-64"
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
             $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-1908.iso"
             $Json.variables.iso_checksum="9a2c47d97b9975452f7d582264e9fc16d108ed8252ac6816239a3b58cef5c53d"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptHostname"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'oraclelinux' {
@@ -113,11 +104,39 @@ function New-TemplateFile
             $Json.variables.floppy_files="kickstart/oraclelinux7/ks.cfg"
             $Json.variables.iso_url="put_files_here/V983339-01.iso"
             $Json.variables.iso_checksum="1D06CEF6A518C32C0E7ADCAD0A99A8EFBC7516066DE41118EBF49002C15EA84D"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptHostname"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+        }
+        'oracledatabase' {
+            $TemplateJsonFile = New-TemplatePacker "oraclelinux"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
+            Remove-Item $TemplateJsonFile
+
+            $Json.provisioners += @{}
+            $Json.provisioners += @{}
+            $Json.provisioners += @{}       
+            $TempFile = New-TemporaryFile
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
+
+            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'cpus' -Value '2'
+            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '4096'
+
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/oracledatabase/19c/'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp'
+
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value 'put_files_here/LINUX.X64_193000_db_home.zip'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp/LINUX.X64_193000_db_home.zip'
+
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptDatabase"
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsDatabase
+
         } 
         'tuleap' {
-            $TemplateJsonFile = New-TemplateFile "centos"
+            $TemplateJsonFile = New-TemplatePacker "centos"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
             Remove-Item $TemplateJsonFile
 
@@ -126,9 +145,6 @@ function New-TemplateFile
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
-            
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
-            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
@@ -140,7 +156,7 @@ function New-TemplateFile
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
         } 
         'tuleapldap' {
-            $TemplateJsonFile = New-TemplateFile "centos"
+            $TemplateJsonFile = New-TemplatePacker "centos"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
             Remove-Item $TemplateJsonFile
             
@@ -149,9 +165,6 @@ function New-TemplateFile
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
-            
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptProxy && $InlineScriptHostname && $InlineScriptUpdateOS"
-            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
@@ -167,8 +180,8 @@ function New-TemplateFile
     }
     $TempFile = New-TemporaryFile
     $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
-    Move-Item $TempFile $NewTemplateJsonFile
-    return $NewTemplateJsonFile
+
+    return $TempFile
 }
 
 function CleanupPackage {
@@ -179,9 +192,8 @@ function CleanupPackage {
     
     $outputFolder = "output-vmware-iso"
     $newoutputFolder = "output-${ImageNameDirectory}"
-    
-    Clear-Host
-    Write-Host "======================== Cleanup & Package ==========================="
+
+    Write-Host "======================== Cleanup & Package: ${ImageNameDirectory} ==========================="
 
 	if (Test-Path $outputFolder) {
         Move-Item $outputFolder $newoutputFolder -Force
@@ -189,87 +201,36 @@ function CleanupPackage {
     } 
 }
 
-function BuildPacker
+function Show-packerMenu
 {
 param (
-    [string]$Title = 'Packer Menu'
+    [string]$Title = 'Packer Template'
 )
 
-do
-{
-    Clear-Host
     Write-Host "================ $Title ================"
     
-    Write-Host " Press '0' CentOS."
-    Write-Host " Press '1' Oracle Linux 7.."
-    Write-Host " Press '2' Tuleap."
-    Write-Host " Press '3' Tuleap LDAP."
-    Write-Host " Press 'r' Return."
-    $selection = Read-Host " Press Any Key: Default Packer Build Template"
-    If($selection -eq "r") 
-    {
-        Show-proxyMenu
-        break
-   }
-    switch ($selection)
-    {
-        '0' {
-            $TemplateFile=New-TemplateFile "centos"
-            $ImageDirectory= New-ImageDirectory "CentOS"
-            New-Item -Name $ImageDirectory -ItemType Directory
-            Move-Item -path $TemplateFile -Destination $ImageDirectory
-        }
-        '1' {
-            $TemplateFile=New-TemplateFile "oraclelinux"
-            $ImageDirectory= New-ImageDirectory "Oracle"
-            New-Item -Name $ImageDirectory -ItemType Directory
-            Move-Item -path $TemplateFile -Destination $ImageDirectory
-        } 
-        '2' {
-            $TemplateFile=New-TemplateFile "tuleap"
-            $ImageDirectory= New-ImageDirectory "Tuleap"
-            New-Item -Name $ImageDirectory -ItemType Directory
-            Move-Item -path $TemplateFile -Destination $ImageDirectory
-        }
-        '3' {
-            $TemplateFile=New-TemplateFile "tuleapldap"
-            $ImageDirectory= New-ImageDirectory "Tuleap"
-            New-Item -Name $ImageDirectory -ItemType Directory
-            Move-Item -path $TemplateFile -Destination $ImageDirectory
-        } 
-        default {
-            $TemplateFile=New-TemplateFile "centos"
-            $ImageDirectory= New-ImageDirectory "CentOS"
-            New-Item -Name $ImageDirectory -ItemType Directory
-            Move-Item -path $TemplateFile -Destination $ImageDirectory    
-        }  
-    }
-    if (([string]::IsNullOrEmpty($selection))) {break}
-} until (-not ([string]::IsNullOrEmpty($selection)))
-     $env:PACKER_LOG=1
-     $env:PACKER_LOG_PATH="packerlog.txt"
-     $host.ui.RawUI.WindowTitle = "Packer Build Template ($ImageName)" 
-     Set-Rootpw $ImageDirectory
-     Write-Host "Creating VM Image > packer build $ImageDirectory/$TemplateFile"
-     invoke-expression  "packer build $ImageDirectory/$TemplateFile"
-     Read-Host ' Press Enter to re-package artifacts into new Directory...'
-     CleanupPackage $ImageDirectory
-     Pause
- }
+    Write-Host " [1] CentOS 7"
+    Write-Host " [2] Oracle Linux 7"
+    Write-Host " [3] Tuleap"
+    Write-Host " [4] Tuleap LDAP"
+    Write-Host " [5] Oracle Database 19c"
+}
 
 
-Function BuildProxy {
+Function BuildPacker {
 
     Param(
-        [switch] $proxy=$false
+        [string]$ImageDirectory
     )
-    if($proxy) {
-        if (Add-PXCredential) {Start-Px(Test-Px)}
-        BuildPacker "Packer Build Image Using Px Proxy"
-        Stop-Px
-    } elseif (-not $proxy) {
-        BuildPacker "Packer Build Image Using Direct Internet"
-    }
+    
+    $env:PACKER_LOG=1
+    $env:PACKER_LOG_PATH="$ImageDirectory/packerlog.txt"
+    $host.ui.RawUI.WindowTitle = "Packer Build Template ($TemplateFileDirectory)" 
+    Write-Host "Creating VM Image > packer build $ImageDirectory/$TemplateFile"
+    invoke-expression  "packer build $ImageDirectory/$TemplateFile"
+    Read-Host " Press Enter to re-package artifacts into new Directory: $ImageDirectory"
+    CleanupPackage $ImageDirectory
+    Pause
 
 }
 
@@ -279,30 +240,41 @@ function Show-proxyMenu
         [string]$Title = 'Proxy Menu'
     )
 
-    do
- {
-    Clear-Host
     Write-Host "================ $Title ================"
-    
-    Write-Host " Press 'y' Proxy (default http_proxy=$env:http_proxy)"
-    Write-Host " Press 'x' Exit."
-
-    $selection = Read-Host " Press Any Key: Default No Proxy."
-    If($selection -eq "x") 
+    if ([string]::IsNullOrEmpty($env:http_proxy))
     {
-        $selection=$null
-        break
-    }     
-     switch ($selection)
-     {
-         'y' {
-            $option = "-proxy"
-         } 
-     }
-     $BuildProxyInvoke = "BuildProxy";
-     invoke-expression  "$BuildProxyInvoke $option"
- }
- until (-not ([string]::IsNullOrEmpty($selection)))
+        $ProxyDefault = "No Proxy (Direct)"
+    } else {
+        $ProxyDefault = "System Proxy:$env:http_proxy"
+    }
+    Write-Host " [0] Configure Px Proxy [Current $ProxyDefault]"
+
+}
+
+
+function Show-oracleSidMenu
+{
+    param (
+        [string]$Title = 'Oracle Database Configuration:'
+    )
+
+    Write-Host "================ $Title ================"
+
+    Write-Host " [10] Configure Global database name (SID=$env:oracle_db_name)"
+    Write-Host " [11] Configure Character set of the database ($env:oracle_db_characterSet)"
+
+}
+
+function Show-zoneinfoMenu
+{
+    param (
+        [string]$Title = "Time Zone (TZ):"
+    )
+
+    Write-Host "================ $Title [$env:zoneinfo] ================"
+
+    Write-Host " [12] Configure zoneinfo TZ"
+
 }
 
 function BuildMachineImage
@@ -310,10 +282,74 @@ function BuildMachineImage
 param (
     [string]$Title = 'Build Machine Image'
 ) 
-
+Clear-Host
 $host.ui.RawUI.WindowTitle=$Title
-Show-proxyMenu "Network Proxy Settings"
+do
+{
+Clear-Host
+Show-proxyMenu
+Show-packerMenu
+Show-rootpwMenu
+Show-directoryMenu
+Show-oraclesidMenu
+Show-zoneinfoMenu
 
+$selection = (Read-Host '  Choose a menu option, or press x to Exit').ToLower()
+
+switch ($selection)
+{
+    'x' {
+       break
+    }
+    '0' {
+        if (Add-PXCredential) {Start-Px(Test-Px)}
+    }
+    '1' {
+        New-TemplatePacker "centos"
+    }
+    '2' {
+        New-TemplatePacker "oraclelinux"
+    } 
+    '3' {
+        New-TemplatePacker "tuleap"
+    }
+    '4' {
+        New-TemplatePacker "tuleapldap"
+    }
+    '5' {
+        $TemplatePacker=New-TemplatePacker "oracledatabase"
+        Move-Item $TemplatePacker "oracledatabase.json" -Force 
+    }
+    '6' {
+        $env:rootpw= Read-Host -Prompt "Enter root password ?"
+    }
+    '7' {
+        $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
+    }
+    '8' {
+        $env:build_output_directory = Read-Host -Prompt "Enter Output ID: "
+    } 
+    '9' {
+        $env:build_output_directory = -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
+    }
+    '10' {
+        $env:oracle_db_name = Read-Host -Prompt "Enter ORACLE SID Name: "
+    }
+    '11' {
+        $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet ?"
+    }
+    '12' {
+        $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
+    }     
+}
+}
+until ( $selection -eq 'x')
 }
 
+$env:rootpw="server"
+$env:oracle_db_name="Non-CDB"
+$env:oracle_db_characterSet="AL32UTF8"
+$env:zoneinfo="UTC"
 BuildMachineImage
+Pause
+Clear-Host
