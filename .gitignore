@@ -12,9 +12,6 @@
 # Binaries
 *.exe
 *.out
-*.iso
-*.zip
-*.json
 
 
 ### Log ###
@@ -24,7 +21,7 @@
 packer_cache/
 packerlog.txt
 output-*/
-packerConfig-*.json
+*.json
 
 # For built boxes
 *.box
@@ -57,4 +54,3 @@ $RECYCLE.BIN/
 # End of https://www.gitignore.io/api/packer,windows,clean
 
 # Custom rules (everything added below won't be overriden by 'Generate .gitignore File' if you use 'Update' option)
-
