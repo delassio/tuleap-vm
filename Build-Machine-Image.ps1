@@ -37,19 +37,19 @@ Function Show-rootpwMenu {
         [string]$Title= "Output Directory:"
     )
 
-                 if ([string]::IsNullOrEmpty($env:build_output_directory)) {
-                    $env:build_output_directory = "vmware-iso"
+                 if ([string]::IsNullOrEmpty($env:id_machine_image)) {
+                    $env:id_machine_image = "vmware-iso"
                 } 
 
-                Write-Host "========================= $Title [ output-$env:build_output_directory-<Template> ] ======================="
+                Write-Host "========================= $Title [ output-<VMNAME>-$env:id_machine_image ] ======================="
 
                 Write-Host " [8] Enter output id ?"
                 Write-Host " [9] Generate: ?" 
         }
-function New-TemplatePacker
+function New-JsonTemplate
 {
     param (
-        [string]$imageMachine
+        [string]$machineImage
     )
             $InlineScriptPermission="chmod -R a+rx /tmp" 
             $InlineScriptProxy="/tmp/linux/yumConfigProxySSL.sh"
@@ -57,7 +57,7 @@ function New-TemplatePacker
             $InlineScriptHostname="/tmp/linux/setHostname.sh"            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
-            $InlineScriptDatabase="chmod -R a+rx /tmp/scripts/*.sh && /tmp/scripts/install.sh"
+            $InlineScriptDatabase="chmod -R a+rx /tmp/scripts/*.sh && /tmp/scripts/install.sh && /tmp/scripts/import.sh"
 
             $EnvVarsDatabase=@( "ORACLE_BASE=/opt/oracle",
                                 "ORACLE_HOME=/opt/oracle/product/19c/dbhome",
@@ -69,27 +69,10 @@ function New-TemplatePacker
             $TemplateJsonFile = "packer_templates\Template.json"
 
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
+
+            $Json.builders[0] | Add-Member -Type NoteProperty -Name "output_directory" -Value ""
             
-            $Json.variables.Hostname="${imageMachine}"
-            $Json.variables.ssh_password="${env:rootpw}"
-
-            if ([string]::IsNullOrEmpty($env:http_proxy))
-            {
-                $Json.variables.proxy=""
-            } else {
-                $Json.variables.proxy="${env:http_proxy}" 
-            }
-
-            if ([string]::IsNullOrEmpty($env:USERDNSDOMAIN))
-            {
-                $Json.variables.dnsuffix=""
-            } else {
-                $Json.variables.dnsuffix="${env:USERDNSDOMAIN}" 
-            }
-
-            $Json.builders[0] | Add-Member -Type NoteProperty -Name "output_directory" -Value "output-$env:build_output_directory-$imageMachine"
-
-    switch ($imageMachine)
+    switch ($machineImage)
     {
         'centos' {
             $Json.variables.guest_os_type="centos7-64"
@@ -108,7 +91,7 @@ function New-TemplatePacker
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'oracledatabase' {
-            $TemplateJsonFile = New-TemplatePacker "oraclelinux"
+            $TemplateJsonFile = New-JsonTemplate "oraclelinux"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
             Remove-Item $TemplateJsonFile
 
@@ -133,10 +116,11 @@ function New-TemplatePacker
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptDatabase"
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsDatabase
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
         } 
         'tuleap' {
-            $TemplateJsonFile = New-TemplatePacker "centos"
+            $TemplateJsonFile = New-JsonTemplate "centos"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
             Remove-Item $TemplateJsonFile
 
@@ -156,7 +140,7 @@ function New-TemplatePacker
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
         } 
         'tuleapldap' {
-            $TemplateJsonFile = New-TemplatePacker "centos"
+            $TemplateJsonFile = New-JsonTemplate "centos"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
             Remove-Item $TemplateJsonFile
             
@@ -178,6 +162,28 @@ function New-TemplatePacker
         default {        
         }  
     }
+
+    $VmId= "$machineImage-$env:id_machine_image"
+            
+    $Json.variables.Hostname="${VmId}"
+    $Json.variables.ssh_password="${env:rootpw}"
+
+    if ([string]::IsNullOrEmpty($env:http_proxy))
+    {
+        $Json.variables.proxy=""
+    } else {
+        $Json.variables.proxy="${env:http_proxy}" 
+    }
+
+    if ([string]::IsNullOrEmpty($env:USERDNSDOMAIN))
+    {
+        $Json.variables.dnsuffix=""
+    } else {
+        $Json.variables.dnsuffix="${env:USERDNSDOMAIN}" 
+    }
+
+    $Json.builders[0].output_directory="output-$VmId"
+
     $TempFile = New-TemporaryFile
     $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
 
@@ -204,7 +210,7 @@ function CleanupPackage {
 function Show-packerMenu
 {
 param (
-    [string]$Title = 'Packer Template'
+    [string]$Title = 'VM Templates'
 )
 
     Write-Host "================ $Title ================"
@@ -305,20 +311,20 @@ switch ($selection)
         if (Add-PXCredential) {Start-Px(Test-Px)}
     }
     '1' {
-        New-TemplatePacker "centos"
+        New-JsonTemplate "centos"
     }
     '2' {
-        New-TemplatePacker "oraclelinux"
+        New-JsonTemplate "oraclelinux"
     } 
     '3' {
-        New-TemplatePacker "tuleap"
+        New-JsonTemplate "tuleap"
     }
     '4' {
-        New-TemplatePacker "tuleapldap"
+        New-JsonTemplate "tuleapldap"
     }
     '5' {
-        $TemplatePacker=New-TemplatePacker "oracledatabase"
-        Move-Item $TemplatePacker "oracledatabase.json" -Force 
+        $JsonTemplate=New-JsonTemplate "oracledatabase"
+        Move-Item $JsonTemplate "oracledatabase.json" -Force 
     }
     '6' {
         $env:rootpw= Read-Host -Prompt "Enter root password ?"
@@ -327,10 +333,10 @@ switch ($selection)
         $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
     }
     '8' {
-        $env:build_output_directory = Read-Host -Prompt "Enter Output ID: "
+        $env:id_machine_image = Read-Host -Prompt "Enter Output ID: "
     } 
     '9' {
-        $env:build_output_directory = -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
+        $env:id_machine_image = -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
     }
     '10' {
         $env:oracle_db_name = Read-Host -Prompt "Enter ORACLE SID Name: "

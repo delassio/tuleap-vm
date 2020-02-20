@@ -80,6 +80,12 @@ echo 'INSTALLER: SQLNET.ORA Network Configuration File created'
 
 # Listener.ora: Check Listener Registration (LREG)
 
+# Open 1521 listener port
+
+sudo firewall-cmd --permanent --add-port=1521/tcp
+
+sudo firewall-cmd --reload
+
 
 # Create database
 
@@ -111,6 +117,7 @@ echo "INSTALLER: Created and enabled oracle-rdbms systemd's service"
 
 sudo cp -f /tmp/scripts/setPassword.sh /home/oracle/
 sudo chmod a+rx /home/oracle/setPassword.sh
+
 
 echo "INSTALLER: setPassword.sh file setup";
 
