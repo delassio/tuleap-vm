@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 #
 # Description: Import user-defined dump for Oracle database software
 # MAINTAINER: Oussama DELASSI
@@ -6,8 +6,9 @@
 # Abort on any error
 set -e
 
-
-
+# remove hidden file from dump directory
+rm -rf /tmp/dump/.*
+echo 'IMPORT: Cleanup dump directory'
 
 # run user-defined import dump scripts
 echo 'IMPORT: Running import dump scripts'

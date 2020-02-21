@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 #
 # LICENSE UPL 1.0
 #

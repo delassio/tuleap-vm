@@ -21,7 +21,6 @@
 packer_cache/
 packerlog.txt
 output-*/
-*.json
 
 # For built boxes
 *.box

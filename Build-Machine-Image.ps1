@@ -311,20 +311,24 @@ switch ($selection)
         if (Add-PXCredential) {Start-Px(Test-Px)}
     }
     '1' {
-        New-JsonTemplate "centos"
+        $JsonTemplate=New-JsonTemplate "centos"
+        Move-Item $JsonTemplate packer_templates\"centos.json" -Force 
     }
     '2' {
-        New-JsonTemplate "oraclelinux"
+        $JsonTemplate=New-JsonTemplate "oraclelinux"
+        Move-Item $JsonTemplate packer_templates\"oraclelinux.json" -Force 
     } 
     '3' {
-        New-JsonTemplate "tuleap"
+        $JsonTemplate=New-JsonTemplate "tuleap"
+        Move-Item $JsonTemplate packer_templates\"tuleap.json" -Force 
     }
     '4' {
-        New-JsonTemplate "tuleapldap"
+        $JsonTemplate=New-JsonTemplate "tuleapldap"
+        Move-Item $JsonTemplate packer_templates\"tuleapldap.json" -Force 
     }
     '5' {
         $JsonTemplate=New-JsonTemplate "oracledatabase"
-        Move-Item $JsonTemplate "oracledatabase.json" -Force 
+        Move-Item $JsonTemplate packer_templates\"oracledatabase.json" -Force 
     }
     '6' {
         $env:rootpw= Read-Host -Prompt "Enter root password ?"
