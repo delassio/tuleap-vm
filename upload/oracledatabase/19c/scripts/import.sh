@@ -6,31 +6,36 @@
 # Abort on any error
 set -e
 
-# remove hidden file from dump directory
-rm -rf /tmp/dump/.*
-echo 'IMPORT: Cleanup dump directory'
+echo 'IMPORT DUMP: Started up'
+
+# remove gitignore file from dump directory
+rm -f /tmp/dump/.gitignore
+echo 'IMPORT DUMP: Cleanup gitignore file'
 
 # run user-defined import dump scripts
-echo 'IMPORT: Running import dump scripts'
+echo 'IMPORT DUMP: Running import dump scripts'
 
 for f in /tmp/dump/*
   do
     case "${f,,}" in
       *.sh)
-        echo "IMPORT: Running $f"
+        echo "IMPORT DUMP: Running $f"
         su -l oracle -c ". \"$f\""
-        echo "IMPORT: Done running $f"
+        echo "IMPORT DUMP: Done running $f"
         ;;
       *.sql)
-        echo "IMPORT: Running $f"
+        echo "IMPORT DUMP: Running $f"
         su -l oracle -c "echo 'exit' | sqlplus -s / as sysdba @\"$f\""
-        echo "IMPORT: Done running $f"
+        echo "IMPORT DUMP: Done running $f"
         ;;
       /tmp/dump/put_import_scripts_here.txt)
         :
         ;;
       *)
-        echo "IMPORT: Ignoring $f"
+        echo "IMPORT DUMP: Ignoring $f"
         ;;
     esac
   done
+  
+  
+  echo "IMPORT DUMP: import complete, database ready to use!";

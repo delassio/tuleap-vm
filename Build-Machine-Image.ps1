@@ -210,7 +210,7 @@ function CleanupPackage {
 function Show-packerMenu
 {
 param (
-    [string]$Title = 'VM Templates'
+    [string]$Title = 'Generate VM Templates'
 )
 
     Write-Host "================ $Title ================"
@@ -243,7 +243,7 @@ Function BuildPacker {
 function Show-proxyMenu
 {
     param (
-        [string]$Title = 'Proxy Menu'
+        [string]$Title = 'Px Proxy'
     )
 
     Write-Host "================ $Title ================"
@@ -357,7 +357,7 @@ until ( $selection -eq 'x')
 }
 
 $env:rootpw="server"
-$env:oracle_db_name="Non-CDB"
+$env:oracle_db_name="Non_CDB"
 $env:oracle_db_characterSet="AL32UTF8"
 $env:zoneinfo="UTC"
 BuildMachineImage

@@ -1,5 +1,6 @@
 *.sql
 *.sh
 *.dmp
+*.Z
 !.gitignore
 !put_dump_file_&_scripts_here.txt
