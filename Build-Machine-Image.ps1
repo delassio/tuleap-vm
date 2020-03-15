@@ -357,7 +357,7 @@ until ( $selection -eq 'x')
 }
 
 $env:rootpw="server"
-$env:oracle_db_name="Non_CDB"
+$env:oracle_db_name="NonCDB"
 $env:oracle_db_characterSet="AL32UTF8"
 $env:zoneinfo="UTC"
 BuildMachineImage
