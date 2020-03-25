@@ -11,16 +11,6 @@ catch {
 }
 #endregion
 
-Function Show-rootpwMenu {
-    param (
-    [string]$Title= "VM SSH Root Password:" 
-)     
-            Write-Host "====== $Title [$env:rootpw] ======="
-            Write-Host " [6] Enter root password ?"
-            Write-Host " [7] Generate password ?"
-    }
-
-
     Function Copy-rootpwDirectory {
         param (
         [string]$imageMachineDirectory 
@@ -32,20 +22,6 @@ Function Show-rootpwMenu {
                     Move-Item -path $rootpwFile -Destination $imageMachineDirectory
         }
 
-    Function Show-directoryMenu {
-        param (
-        [string]$Title= "Output Directory:"
-    )
-
-                 if ([string]::IsNullOrEmpty($env:id_machine_image)) {
-                    $env:id_machine_image = "vmware-iso"
-                } 
-
-                Write-Host "========================= $Title [ output-<VMNAME>-$env:id_machine_image ] ======================="
-
-                Write-Host " [8] Enter output id ?"
-                Write-Host " [9] Generate: ?" 
-        }
 function New-JsonTemplate
 {
     param (
@@ -57,14 +33,17 @@ function New-JsonTemplate
             $InlineScriptHostname="/tmp/linux/setHostname.sh"            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
-            $InlineScriptDatabase="chmod -R a+rx /tmp/scripts/*.sh && /tmp/scripts/install.sh && /tmp/scripts/import.sh"
+            $InlineScriptOracle="chmod -R a+rx /tmp/scripts/*.sh && /tmp/scripts/install.sh && /tmp/scripts/import.sh"
+            $InlineScriptPercona="chmod -R a+rx /tmp/scripts/*.sh && /tmp/scripts/install.sh"
 
-            $EnvVarsDatabase=@( "ORACLE_BASE=/opt/oracle",
+            $EnvVarsOracle=@( "ORACLE_BASE=/opt/oracle",
                                 "ORACLE_HOME=/opt/oracle/product/19c/dbhome",
                                 "ORACLE_SID=${env:oracle_db_name}",
                                 "ORACLE_CHARACTERSET=${env:oracle_db_characterSet}",
                                 "ORACLE_EDITION=SE2",
                                 "SYSTEM_TIMEZONE=${env:zoneinfo}")
+
+            $EnvVarsPercona=@( "SYSTEM_TIMEZONE=${env:zoneinfo}")
             
             $TemplateJsonFile = "packer_templates\Template.json"
 
@@ -90,6 +69,30 @@ function New-JsonTemplate
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptHostname"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
+        'perconamysql' {
+            $TemplateJsonFile = New-JsonTemplate "centos"
+            $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
+            Remove-Item $TemplateJsonFile
+            
+            $Json.provisioners += @{}
+            $Json.provisioners += @{}  
+            $TempFile = New-TemporaryFile
+            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
+            $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
+
+            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'cpus' -Value '2'
+            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '4096'
+
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/percona/'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp'
+
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPercona"
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsPercona
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+
+        }
         'oracledatabase' {
             $TemplateJsonFile = New-JsonTemplate "oraclelinux"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
@@ -114,8 +117,8 @@ function New-JsonTemplate
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp/LINUX.X64_193000_db_home.zip'
 
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptDatabase"
-            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsDatabase
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptOracle"
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsOracle
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
         } 
@@ -207,39 +210,6 @@ function CleanupPackage {
     } 
 }
 
-function Show-packerMenu
-{
-param (
-    [string]$Title = 'Generate VM Templates'
-)
-
-    Write-Host "================ $Title ================"
-    
-    Write-Host " [1] CentOS 7"
-    Write-Host " [2] Oracle Linux 7"
-    Write-Host " [3] Tuleap"
-    Write-Host " [4] Tuleap LDAP"
-    Write-Host " [5] Oracle Database 19c"
-}
-
-
-Function BuildPacker {
-
-    Param(
-        [string]$ImageDirectory
-    )
-    
-    $env:PACKER_LOG=1
-    $env:PACKER_LOG_PATH="$ImageDirectory/packerlog.txt"
-    $host.ui.RawUI.WindowTitle = "Packer Build Template ($TemplateFileDirectory)" 
-    Write-Host "Creating VM Image > packer build $ImageDirectory/$TemplateFile"
-    invoke-expression  "packer build $ImageDirectory/$TemplateFile"
-    Read-Host " Press Enter to re-package artifacts into new Directory: $ImageDirectory"
-    CleanupPackage $ImageDirectory
-    Pause
-
-}
-
 function Show-proxyMenu
 {
     param (
@@ -257,29 +227,85 @@ function Show-proxyMenu
 
 }
 
-
-function Show-oracleSidMenu
+function Show-packerMenu
 {
-    param (
-        [string]$Title = 'Oracle Database Configuration:'
-    )
+param (
+    [string]$Title = 'Generate VM Templates'
+)
 
     Write-Host "================ $Title ================"
-
-    Write-Host " [10] Configure Global database name (SID=$env:oracle_db_name)"
-    Write-Host " [11] Configure Character set of the database ($env:oracle_db_characterSet)"
-
+    
+    Write-Host " [1] CentOS 7"
+    Write-Host " [2] Oracle Linux 7"
+    Write-Host " [3] Tuleap"
+    Write-Host " [4] Tuleap LDAP"
+    Write-Host " [5] Oracle Database 19c"
+    Write-Host " [6] Percona Server for MySQL"
 }
 
-function Show-zoneinfoMenu
-{
+Function Show-rootpwMenu {
     param (
-        [string]$Title = "Time Zone (TZ):"
+    [string]$Title= "VM SSH Root Password:" 
+)     
+            Write-Host "====== $Title [$env:rootpw] ======="
+            Write-Host " [7] Enter root password ?"
+            Write-Host " [8] Generate password ?"
+    }
+
+    Function Show-directoryMenu {
+        param (
+        [string]$Title= "Output Directory:"
     )
 
-    Write-Host "================ $Title [$env:zoneinfo] ================"
+                 if ([string]::IsNullOrEmpty($env:id_machine_image)) {
+                    $env:id_machine_image = "vmware-iso"
+                } 
 
-    Write-Host " [12] Configure zoneinfo TZ"
+                Write-Host "========================= $Title [ output-<VMNAME>-$env:id_machine_image ] ======================="
+
+                Write-Host " [9] Enter output id ?"
+                Write-Host " [10] Generate: ?" 
+        }
+
+        function Show-oracleSidMenu
+        {
+            param (
+                [string]$Title = 'Oracle Database Configuration:'
+            )
+        
+            Write-Host "================ $Title ================"
+        
+            Write-Host " [11] Configure Global database name (SID=$env:oracle_db_name)"
+            Write-Host " [12] Configure Character set of the database ($env:oracle_db_characterSet)"
+        
+        }
+
+        function Show-zoneinfoMenu
+        {
+            param (
+                [string]$Title = "Time Zone (TZ):"
+            )
+        
+            Write-Host "================ $Title [$env:zoneinfo] ================"
+        
+            Write-Host " [13] Configure zoneinfo TZ"
+        
+        }
+
+Function BuildPacker {
+
+    Param(
+        [string]$ImageDirectory
+    )
+    
+    $env:PACKER_LOG=1
+    $env:PACKER_LOG_PATH="$ImageDirectory/packerlog.txt"
+    $host.ui.RawUI.WindowTitle = "Packer Build Template ($TemplateFileDirectory)" 
+    Write-Host "Creating VM Image > packer build $ImageDirectory/$TemplateFile"
+    invoke-expression  "packer build $ImageDirectory/$TemplateFile"
+    Read-Host " Press Enter to re-package artifacts into new Directory: $ImageDirectory"
+    CleanupPackage $ImageDirectory
+    Pause
 
 }
 
@@ -331,24 +357,28 @@ switch ($selection)
         Move-Item $JsonTemplate packer_templates\"oracledatabase.json" -Force 
     }
     '6' {
-        $env:rootpw= Read-Host -Prompt "Enter root password ?"
+        $JsonTemplate=New-JsonTemplate "perconamysql"
+        Move-Item $JsonTemplate packer_templates\"perconamysql.json" -Force 
     }
     '7' {
-        $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
+        $env:rootpw= Read-Host -Prompt "Enter root password ?"
     }
     '8' {
+        $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
+    }
+    '9' {
         $env:id_machine_image = Read-Host -Prompt "Enter Output ID: "
     } 
-    '9' {
+    '10' {
         $env:id_machine_image = -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
     }
-    '10' {
+    '11' {
         $env:oracle_db_name = Read-Host -Prompt "Enter ORACLE SID Name: "
     }
-    '11' {
+    '12' {
         $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet ?"
     }
-    '12' {
+    '13' {
         $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
     }     
 }

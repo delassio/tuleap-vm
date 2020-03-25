@@ -38,7 +38,7 @@
   
   {
     "type": "file",
-    "source": "upload/",
+    "source": "upload/linux",
     "destination": "/tmp"
   },
 

@@ -19,7 +19,7 @@ sudo yum install https://repo.percona.com/yum/percona-release-latest.noarch.rpm
 echo 'INSTALLER: Percona repository complete'
 
 # set system time zone
-sudo timedatectl set-timezone $SYSTEM_TIMEZONE
+# sudo timedatectl set-timezone $SYSTEM_TIMEZONE
 echo "INSTALLER: System time zone set to $SYSTEM_TIMEZONE"
 
 # Enable the repository
