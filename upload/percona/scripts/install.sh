@@ -14,7 +14,7 @@ yum upgrade -y
 echo 'INSTALLER: System updated'
 
 # Install the Percona repository
-sudo yum install https://repo.percona.com/yum/percona-release-latest.noarch.rpm
+sudo yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
 
 echo 'INSTALLER: Percona repository complete'
 
@@ -39,42 +39,21 @@ sudo firewall-cmd --permanent --add-service=mysql
 
 sudo firewall-cmd --reload
 
-
-#  MySQL root password
-
-grep "temporary password" /var/log/mysqld.log
-
 # Starting the service
 
 sudo systemctl start mysqld
 
-# run user-defined post-setup scripts
-echo 'INSTALLER: Running user-defined post-setup scripts'
+#  Reset MySQL temporary password for root@localhost
 
-for f in /tmp/userscripts/*
-  do
-    case "${f,,}" in
-      *.sh)
-        echo "INSTALLER: Running $f"
-        . "$f"
-        echo "INSTALLER: Done running $f"
-        ;;
-      *.sql)
-        echo "INSTALLER: Running $f"
-        su -l oracle -c "echo 'exit' | sqlplus -s / as sysdba @\"$f\""
-        echo "INSTALLER: Done running $f"
-        ;;
-      /tmp/userscripts/put_custom_scripts_here.txt)
-        :
-        ;;
-      *)
-        echo "INSTALLER: Ignoring $f"
-        ;;
-    esac
-  done
+MYSQL_TEMP_PWD=$(sed -n '2{p;q}' /var/log/mysqld.log | tail -c 13)
 
-echo 'INSTALLER: Done running user-defined post-setup scripts'
+MYSQL_PWD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9-_!@#$%^&*()_+{}|:<>?=' | fold -w 15 | head -1)
 
-echo "ORACLE PASSWORD FOR SYS, SYSTEM AND PDBADMIN: $ORACLE_PWD";
+echo "Mysql user (root) : $MYSQL_PWD" > .percona_passwd
+
+mysql --connect-expired-password -uroot -p${MYSQL_TEMP_PWD} -e "alter user 'root'@'localhost' identified by \"${MYSQL_PWD}\";"
+
+
+echo "MYSQL PASSWORD FOR root@localhost: $MYSQL_PWD";
 
 echo "INSTALLER: Installation complete, database ready to use!";

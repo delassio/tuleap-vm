@@ -2,9 +2,9 @@
 
 
 function configure_dependencies {
-yum install epel-release -y && \
-yum install centos-release-scl -y && \
-yum install http://rpms.remirepo.net/enterprise/remi-release-7.rpm -y
+yum install -y epel-release && \
+yum install -y centos-release-scl && \
+yum install -y https://rpms.remirepo.net/enterprise/remi-release-7.rpm
 }
 
 
@@ -12,7 +12,7 @@ function tuleap_repo {
 cat >/etc/yum.repos.d/Tuleap.repo <<EOF
 [Tuleap]
 name=Tuleap
-baseurl=https://ci.tuleap.net/yum/tuleap/rhel/7/dev/\$basearch
+baseurl=https://ci.tuleap.net/yum/tuleap/rhel/7/stable/\$basearch
 enabled=1
 gpgcheck=1
 gpgkey=https://ci.tuleap.net/yum/tuleap/gpg.key
