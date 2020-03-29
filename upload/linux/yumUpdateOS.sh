@@ -4,7 +4,7 @@
 # get up to date
 
 
-sudo yum -y upgrade &&
+# sudo yum -y upgrade &&
 
 echo "System Updated..." &&
 

@@ -21,6 +21,21 @@ echo 'INSTALLER: yum verify SSL OK'
 fi
 }
 
+function disableYumOption {
+
+if [ -f /etc/centos-release  ]; then
+
+    echo 'INSTALLER: Disable yum fatestmirror plugin, mirrorlist' && \
+
+    sed -i -e "s|enabled=1|enabled=0|"  /etc/yum/pluginconf.d/fastestmirror.conf
+
+    sed -i -e "s|mirrorlist=|#mirrorlist=|"  /etc/yum.repos.d/CentOS-Base.repo
+
+    sed -i -e "s|#baseurl=|baseurl=|"  /etc/yum.repos.d/CentOS-Base.repo
+fi
+
+}
+
 function configYumProxy {
 # set proxy configuration 
 if [[ -n "$proxy" ]]
@@ -28,22 +43,10 @@ then
 echo "proxy="$proxy >> /etc/yum.conf
 echo "INSTALLER: Proxy settings: "$proxy" will be used for yum.conf."
 checkProxySSL
+disableYumOption
 else
 echo "INSTALLER: No Proxy settings will be used for yum.conf."     
 fi    
 }
 
-function disableYumOption {
-
-echo 'INSTALLER: Disable yum fatestmirror plugin, mirrorlist' && \
-
-sed -i -e "s|enabled=1|enabled=0|"  /etc/yum/pluginconf.d/fastestmirror.conf
-
-sed -i -e "s|mirrorlist=|#mirrorlist=|"  /etc/yum.repos.d/CentOS-Base.repo
-
-sed -i -e "s|#baseurl=|baseurl=|"  /etc/yum.repos.d/CentOS-Base.repo
-
-}
-
 configYumProxy
-disableYumOption

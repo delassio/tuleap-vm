@@ -27,7 +27,8 @@ function New-JsonTemplate
     param (
         [string]$machineImage
     )
-            $InlineScriptPermission="chmod -R a+rx /tmp" 
+            $InlineScriptPermission="chmod -R a+rx /tmp"
+            $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh"  
             $InlineScriptProxy="/tmp/linux/yumConfigProxySSL.sh"
             $InlineScriptUpdateOS="/tmp/linux/yumUpdateOS.sh"
             $InlineScriptHostname="/tmp/linux/setHostname.sh"            
@@ -58,7 +59,7 @@ function New-JsonTemplate
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
             $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-1908.iso"
             $Json.variables.iso_checksum="9a2c47d97b9975452f7d582264e9fc16d108ed8252ac6816239a3b58cef5c53d"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptHostname"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'oraclelinux' {
@@ -66,7 +67,7 @@ function New-JsonTemplate
             $Json.variables.floppy_files="kickstart/oraclelinux7/ks.cfg"
             $Json.variables.iso_url="put_files_here/V983339-01.iso"
             $Json.variables.iso_checksum="1D06CEF6A518C32C0E7ADCAD0A99A8EFBC7516066DE41118EBF49002C15EA84D"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptHostname"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'perconamysql' {
