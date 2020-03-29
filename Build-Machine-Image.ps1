@@ -27,15 +27,15 @@ function New-JsonTemplate
     param (
         [string]$machineImage
     )
-            $InlineScriptPermission="chmod -R a+rx /tmp"
+            $InlineScriptPermission="find /tmp -type f -iname '*.sh' -exec chmod +x {} \;"
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh"  
             $InlineScriptProxy="/tmp/linux/yumConfigProxySSL.sh"
             $InlineScriptUpdateOS="/tmp/linux/yumUpdateOS.sh"
             $InlineScriptHostname="/tmp/linux/setHostname.sh"            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
-            $InlineScriptOracle="chmod -R a+rx /tmp/scripts/*.sh && /tmp/scripts/install.sh && /tmp/scripts/import.sh"
-            $InlineScriptPercona="chmod -R a+rx /tmp/scripts/*.sh && /tmp/scripts/install.sh"
+            $InlineScriptOracle="/tmp/oracledatabase/scripts/install.sh && /tmp/oracledatabase/scripts/import.sh"
+            $InlineScriptPercona="/tmp/percona/scripts/install.sh"
 
             $EnvVarsOracle=@( "ORACLE_BASE=/opt/oracle",
                                 "ORACLE_HOME=/opt/oracle/product/19c/dbhome",
@@ -85,11 +85,11 @@ function New-JsonTemplate
             $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '4096'
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/percona/'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/percona'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp'
 
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPercona"
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptPercona"
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsPercona
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
@@ -110,7 +110,7 @@ function New-JsonTemplate
             $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '4096'
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/oracledatabase/19c/'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/oracledatabase'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp'
 
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
@@ -118,7 +118,7 @@ function New-JsonTemplate
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp/LINUX.X64_193000_db_home.zip'
 
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptOracle"
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracle"
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsOracle
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
@@ -129,39 +129,31 @@ function New-JsonTemplate
             Remove-Item $TemplateJsonFile
 
             $Json.provisioners += @{}
+            $Json.provisioners += @{}  
             $Json.provisioners += @{}       
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
 
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value $InlineScriptTuleap
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/tuleap'
+            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp'
+
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptTuleap"
             
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
         } 
         'tuleapldap' {
-            $TemplateJsonFile = New-JsonTemplate "centos"
+            $TemplateJsonFile = New-JsonTemplate "tuleap"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
             Remove-Item $TemplateJsonFile
             
-            $Json.provisioners += @{}
-            $Json.provisioners += @{}   
-            $TempFile = New-TemporaryFile
-            $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
-            $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
-
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'pause_before' -Value '30s'
-            $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptTuleap && $InlineScriptTuleapLdap"
-            
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'direction' -Value 'download'
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value '/root/.tuleap_passwd'
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '.tuleap_passwd'
+            $Json.provisioners[3].inline = "$InlineScriptPermission && $InlineScriptTuleap && $InlineScriptTuleapLdap"
         }
         default {        
         }  
