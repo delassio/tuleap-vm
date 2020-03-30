@@ -45,7 +45,7 @@
   {
     "type": "shell",
     "inline": [
-      "chmod -R a+rx /tmp/linux && /tmp/linux/setEnvironmentVariables.sh"
+      "find /tmp -type f -iname '*.sh' -exec chmod +x {} \\; && /tmp/linux/setEnvironmentVariables.sh"
     ],
 	"environment_vars": [
       "proxy={{user `proxy`}}",
