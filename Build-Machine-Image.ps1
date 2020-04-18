@@ -54,6 +54,18 @@ function New-JsonTemplate
             
     switch ($machineImage)
     {
+        'centos6' {
+            $Json.variables.guest_os_type="centos6-64"
+            $Json.variables.floppy_files="kickstart/centos6/ks.cfg"
+            $Json.variables.iso_url="put_files_here/CentOS-6.10-x86_64-minimal.iso"
+            $Json.variables.iso_checksum="7c0dee2a0494dabd84809b72ddb4b761f9ef92b78a506aef709b531c54d30770"
+
+            $Json.builders[0].boot_command='["<tab> text ks=hd:fd0:/ks.cfg <enter><wait>"]'
+            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '1024'
+
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptUpdateOS"
+            $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+        }
         'centos7' {
             $Json.variables.guest_os_type="centos7-64"
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
@@ -183,25 +195,10 @@ function New-JsonTemplate
     $TempFile = New-TemporaryFile
     $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
 
+    $env:GeneratedTemplate=$machineImage
     return $TempFile
 }
 
-function CleanupPackage {
-
-    param (
-        [string]$ImageNameDirectory
-    )
-    
-    $outputFolder = "output-vmware-iso"
-    $newoutputFolder = "output-${ImageNameDirectory}"
-
-    Write-Host "======================== Cleanup & Package: ${ImageNameDirectory} ==========================="
-
-	if (Test-Path $outputFolder) {
-        Move-Item $outputFolder $newoutputFolder -Force
-        Move-Item -path $newoutputFolder -Destination $ImageNameDirectory
-    } 
-}
 
 function Show-proxyMenu
 {
@@ -228,12 +225,13 @@ param (
 
     Write-Host "================ $Title ================"
     
-    Write-Host " [1] CentOS 7"
-    Write-Host " [2] Oracle Linux 7"
-    Write-Host " [3] Tuleap"
-    Write-Host " [4] Tuleap LDAP"
-    Write-Host " [5] Oracle Database 19c"
-    Write-Host " [6] Percona Server for MySQL"
+    Write-Host " [1] CentOS 6"
+    Write-Host " [2] CentOS 7"
+    Write-Host " [3] Oracle Linux 7"
+    Write-Host " [4] Tuleap"
+    Write-Host " [5] Tuleap LDAP"
+    Write-Host " [6] Oracle Database 19c"
+    Write-Host " [7] Percona Server for MySQL"
 }
 
 Function Show-rootpwMenu {
@@ -241,8 +239,8 @@ Function Show-rootpwMenu {
     [string]$Title= "VM SSH Root Password:" 
 )     
             Write-Host "====== $Title [$env:rootpw] ======="
-            Write-Host " [7] Enter root password ?"
-            Write-Host " [8] Generate password ?"
+            Write-Host " [8] Enter root password ?"
+            Write-Host " [9] Generate password ?"
     }
 
     Function Show-directoryMenu {
@@ -256,8 +254,8 @@ Function Show-rootpwMenu {
 
                 Write-Host "========================= $Title [ output-<VMNAME>-$env:id_machine_image ] ======================="
 
-                Write-Host " [9] Enter output id ?"
-                Write-Host " [10] Generate: ?" 
+                Write-Host " [10] Enter output id ?"
+                Write-Host " [11] Generate: ?" 
         }
 
         function Show-oracleSidMenu
@@ -268,8 +266,8 @@ Function Show-rootpwMenu {
         
             Write-Host "================ $Title ================"
         
-            Write-Host " [11] Configure Global database name (SID=$env:oracle_db_name)"
-            Write-Host " [12] Configure Character set of the database ($env:oracle_db_characterSet)"
+            Write-Host " [12] Configure Global database name (SID=$env:oracle_db_name)"
+            Write-Host " [13] Configure Character set of the database ($env:oracle_db_characterSet)"
         
         }
 
@@ -281,26 +279,27 @@ Function Show-rootpwMenu {
         
             Write-Host "================ $Title [$env:zoneinfo] ================"
         
-            Write-Host " [13] Configure zoneinfo TZ"
+            Write-Host " [14] Configure zoneinfo TZ"
+        
+        }
+
+        function Show-buildMenu
+        {
+            param (
+                [string]$Title = "packer build packer_templates\"
+            )
+        
+            Write-Host "================ $Title${env:GeneratedTemplate}.json ================"
+        
+            Write-Host " [15] Begin Packer Build"
         
         }
 
 Function BuildPacker {
-
-    Param(
-        [string]$TemplateFile,
-        [string]$ImageDirectory
-    )
     
     $env:PACKER_LOG=1
-    $env:PACKER_LOG_PATH="$ImageDirectory/packerlog.txt"
-    $host.ui.RawUI.WindowTitle = "Packer Build Template ($TemplateFileDirectory)" 
-    Write-Host "Creating VM Image > packer build $ImageDirectory/$TemplateFile"
-    invoke-expression  "packer build $ImageDirectory/$TemplateFile"
-    Read-Host " Press Enter to re-package artifacts into new Directory: $ImageDirectory"
-    CleanupPackage $ImageDirectory
-    Pause
-
+    $env:PACKER_LOG_PATH="packer_templates/packerlog_${env:GeneratedTemplate}.txt"
+    invoke-expression  "cmd /c start packer build packer_templates\${env:GeneratedTemplate}.json"
 }
 
 function BuildMachineImage
@@ -319,6 +318,7 @@ Show-rootpwMenu
 Show-directoryMenu
 Show-oraclesidMenu
 Show-zoneinfoMenu
+Show-buildMenu
 
 $selection = (Read-Host '  Choose a menu option, or press 0 to Exit').ToLower()
 
@@ -331,50 +331,56 @@ switch ($selection)
         if (Add-PXCredential) {Start-Px(Test-Px)}
     }
     '1' {
-        $JsonTemplate=New-JsonTemplate "centos7"
-        Move-Item $JsonTemplate packer_templates\"centos7.json" -Force
-        $EnvGenerateTemplate[1] = "Genereted"
+        $JsonTemplate=New-JsonTemplate "centos6"
+        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
     }
     '2' {
-        $JsonTemplate=New-JsonTemplate "oraclelinux"
-        Move-Item $JsonTemplate packer_templates\"oraclelinux.json" -Force 
-    } 
-    '3' {
-        $JsonTemplate=New-JsonTemplate "tuleap"
-        Move-Item $JsonTemplate packer_templates\"tuleap.json" -Force 
+        $JsonTemplate=New-JsonTemplate "centos7"
+        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
     }
+    '3' {
+        $JsonTemplate=New-JsonTemplate "oraclelinux"
+        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+    } 
     '4' {
-        $JsonTemplate=New-JsonTemplate "tuleapldap"
-        Move-Item $JsonTemplate packer_templates\"tuleapldap.json" -Force 
+        $JsonTemplate=New-JsonTemplate "tuleap"
+        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
     }
     '5' {
-        $JsonTemplate=New-JsonTemplate "oracledatabase"
-        Move-Item $JsonTemplate packer_templates\"oracledatabase.json" -Force 
+        $JsonTemplate=New-JsonTemplate "tuleapldap"
+        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
     }
     '6' {
-        $JsonTemplate=New-JsonTemplate "perconamysql"
-        Move-Item $JsonTemplate packer_templates\"perconamysql.json" -Force 
+        $JsonTemplate=New-JsonTemplate "oracledatabase"
+        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force 
     }
     '7' {
-        $env:rootpw= Read-Host -Prompt "Enter root password ?"
+        $JsonTemplate=New-JsonTemplate "perconamysql"
+        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
     }
     '8' {
-        $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
+        $env:rootpw= Read-Host -Prompt "Enter root password ?"
     }
     '9' {
+        $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
+    }
+    '10' {
         $env:id_machine_image = Read-Host -Prompt "Enter Output ID: "
     } 
-    '10' {
+    '11' {
         $env:id_machine_image = -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
     }
-    '11' {
+    '12' {
         $env:oracle_db_name = Read-Host -Prompt "Enter ORACLE SID Name: "
     }
-    '12' {
+    '13' {
         $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet ?"
     }
-    '13' {
+    '14' {
         $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
+    }
+    '15' {
+        BuildPacker
     }    
 }
 }
@@ -385,7 +391,7 @@ $env:rootpw="server"
 $env:oracle_db_name="NonCDB"
 $env:oracle_db_characterSet="AL32UTF8"
 $env:zoneinfo="UTC"
-$EnvGenerateTemplate = @()
+$env:GeneratedTemplate = ""
 BuildMachineImage
 Pause
 Clear-Host

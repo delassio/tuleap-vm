@@ -22,15 +22,14 @@
   "guest_os_type": "{{ user `guest_os_type` }}",
   "ssh_username": "{{ user `ssh_username` }}",
   "ssh_password": "{{ user `ssh_password` }}",
-  "ssh_timeout": "120m",
+  "ssh_timeout": "10m",
   "floppy_files": [
           "{{ user `floppy_files` }}"
         ],
   "boot_command": [
   "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/ks.cfg <enter><wait>"
   ],
-  "shutdown_command": "shutdown -P now",
-  "shutdown_timeout": "120m"
+  "shutdown_command": "shutdown -P now"
   }
 ],
 
