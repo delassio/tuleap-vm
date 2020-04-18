@@ -18,10 +18,6 @@ sudo yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.r
 
 echo 'INSTALLER: Percona repository complete'
 
-# set system time zone
-# sudo timedatectl set-timezone $SYSTEM_TIMEZONE
-echo "INSTALLER: System time zone set to $SYSTEM_TIMEZONE"
-
 # Enable the repository
 sudo percona-release setup ps80
 
@@ -46,9 +42,7 @@ sudo systemctl start mysqld
 
 passwd_file=/root/.percona_passwd
 
-if [ ! -f "$passwd_file" ]; then
-    echo `date` "[Note] mysql temporary root password:" `sed -n '2{p;q}' /var/log/mysqld.log | tail -c 13` >> $passwd_file
-fi
+echo `date` "[Note] mysql temporary root password:" `sed -n '2{p;q}' /var/log/mysqld.log | tail -c 13` >> $passwd_file
 
 TEMP_PWD=`sed '$!d' $passwd_file | tail -c 13`
 
@@ -61,7 +55,7 @@ mysql --connect-expired-password -uroot -p${TEMP_PWD} -e "alter user 'root'@'loc
 # run user-defined post-setup, import scripts
 echo 'INSTALLER: Running user-defined scripts'
 
-for f in /tmp/userscripts/*
+for f in /tmp/percona/userscripts/*
   do
     case "${f,,}" in
       *.sh)
@@ -75,7 +69,7 @@ for f in /tmp/userscripts/*
         echo 'quit' | mysql -uroot -p${MYSQL_PWD} -e "source $f"
         echo "INSTALLER: Done running $f"
         ;;
-      /tmp/userscripts/put_custom_scripts_here.txt)
+      /tmp/percona/userscripts/put_custom_scripts_here.txt)
         :
         ;;
       *)

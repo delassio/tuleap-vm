@@ -29,9 +29,9 @@ function New-JsonTemplate
     )
             $InlineScriptPermission="find /tmp -type f -iname '*.sh' -exec chmod +x {} \;"
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh"  
-            $InlineScriptProxy="/tmp/linux/yumConfigProxySSL.sh"
+            $InlineScriptProxy="/tmp/linux/yumUpdateConfig.sh"
             $InlineScriptUpdateOS="/tmp/linux/yumUpdateOS.sh"
-            $InlineScriptHostname="/tmp/linux/setHostname.sh"            
+            $InlineScriptHostname="/tmp/linux/updateHostname.sh"            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
             $InlineScriptOracle="/tmp/oracledatabase/scripts/install.sh && /tmp/oracledatabase/scripts/import.sh"
@@ -54,7 +54,7 @@ function New-JsonTemplate
             
     switch ($machineImage)
     {
-        'centos' {
+        'centos7' {
             $Json.variables.guest_os_type="centos7-64"
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
             $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-1908.iso"
@@ -216,7 +216,7 @@ function Show-proxyMenu
     } else {
         $ProxyDefault = "System Proxy:$env:http_proxy"
     }
-    Write-Host " [0] Configure Px Proxy [Current $ProxyDefault]"
+    Write-Host " [P] Configure Px Proxy [Current $ProxyDefault]"
 
 }
 
@@ -288,6 +288,7 @@ Function Show-rootpwMenu {
 Function BuildPacker {
 
     Param(
+        [string]$TemplateFile,
         [string]$ImageDirectory
     )
     
@@ -319,19 +320,20 @@ Show-directoryMenu
 Show-oraclesidMenu
 Show-zoneinfoMenu
 
-$selection = (Read-Host '  Choose a menu option, or press x to Exit').ToLower()
+$selection = (Read-Host '  Choose a menu option, or press 0 to Exit').ToLower()
 
 switch ($selection)
 {
-    'x' {
+    '0' {
        break
     }
-    '0' {
+    'P' {
         if (Add-PXCredential) {Start-Px(Test-Px)}
     }
     '1' {
-        $JsonTemplate=New-JsonTemplate "centos"
-        Move-Item $JsonTemplate packer_templates\"centos.json" -Force 
+        $JsonTemplate=New-JsonTemplate "centos7"
+        Move-Item $JsonTemplate packer_templates\"centos7.json" -Force
+        $EnvGenerateTemplate[1] = "Genereted"
     }
     '2' {
         $JsonTemplate=New-JsonTemplate "oraclelinux"
@@ -373,16 +375,17 @@ switch ($selection)
     }
     '13' {
         $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
-    }     
+    }    
 }
 }
-until ( $selection -eq 'x')
+until ( $selection -eq '0')
 }
 
 $env:rootpw="server"
 $env:oracle_db_name="NonCDB"
 $env:oracle_db_characterSet="AL32UTF8"
 $env:zoneinfo="UTC"
+$EnvGenerateTemplate = @()
 BuildMachineImage
 Pause
 Clear-Host

@@ -9,26 +9,35 @@ set -e
 echo 'IMPORT DUMP: Started up'
 
 # remove gitignore file from dump directory
-rm -f /tmp/oracledatabase/dump/.gitignore
+rm -f /tmp/percona/dump/.gitignore
 echo 'IMPORT DUMP: Cleanup gitignore file'
 
 # run user-defined import dump scripts
 echo 'IMPORT DUMP: Running import dump scripts'
 
-for f in /tmp/oracledatabase/dump/*
+
+# Retrive root password
+passwd_file=/root/.percona_passwd
+MYSQL_PWD=`sed '$!d' $passwd_file | tail -c 13`
+
+# run user-defined post-setup, import scripts
+echo 'IMPORT DUMP: Running user-defined scripts'
+
+for f in /tmp/percona/dump/*
   do
     case "${f,,}" in
       *.sh)
         echo "IMPORT DUMP: Running $f"
-        su -l oracle -c ". \"$f\""
+        . "$f"
         echo "IMPORT DUMP: Done running $f"
         ;;
       *.sql)
         echo "IMPORT DUMP: Running $f"
-        su -l oracle -c "echo 'exit' | sqlplus -s / as sysdba @\"$f\""
+        MYSQL_PWD=`sed '$!d' $passwd_file | tail -c 13`
+        echo 'quit' | mysql -uroot -p${MYSQL_PWD} -e "source $f"
         echo "IMPORT DUMP: Done running $f"
         ;;
-      /tmp/oracledatabase/dump/put_import_scripts_here.txt)
+      /tmp/percona/dump/put_import_scripts_here.txt)
         :
         ;;
       *)
@@ -36,6 +45,5 @@ for f in /tmp/oracledatabase/dump/*
         ;;
     esac
   done
-  
-  
-  echo "IMPORT DUMP: import complete, database ready to use!";
+
+echo 'IMPORT DUMP: import complete, database ready to use!'

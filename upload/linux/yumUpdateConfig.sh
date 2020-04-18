@@ -21,7 +21,7 @@ echo 'INSTALLER: yum verify SSL OK'
 fi
 }
 
-function disableYumOption {
+function disableYumMirror {
 
 if [ -f /etc/centos-release  ]; then
 
@@ -32,6 +32,8 @@ if [ -f /etc/centos-release  ]; then
     sed -i -e "s|mirrorlist=|#mirrorlist=|"  /etc/yum.repos.d/CentOS-Base.repo
 
     sed -i -e "s|#baseurl=|baseurl=|"  /etc/yum.repos.d/CentOS-Base.repo
+
+    yum clean all
 fi
 
 }
@@ -43,7 +45,7 @@ then
 echo "proxy="$proxy >> /etc/yum.conf
 echo "INSTALLER: Proxy settings: "$proxy" will be used for yum.conf."
 checkProxySSL
-disableYumOption
+disableYumMirror
 else
 echo "INSTALLER: No Proxy settings will be used for yum.conf."     
 fi    
