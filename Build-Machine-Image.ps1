@@ -28,7 +28,8 @@ function New-JsonTemplate
         [string]$machineImage
     )
             $InlineScriptPermission="find /tmp -type f -iname '*.sh' -exec chmod +x {} \;"
-            $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh"  
+            $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh" 
+            $InlineScriptNetworkManager="/tmp/linux/yumNetworkManager.sh"  
             $InlineScriptProxy="/tmp/linux/yumUpdateConfig.sh"
             $InlineScriptUpdateOS="/tmp/linux/yumUpdateOS.sh"
             $InlineScriptHostname="/tmp/linux/updateHostname.sh"            
@@ -62,6 +63,8 @@ function New-JsonTemplate
 
             $Json.builders[0].boot_command='["<tab> text ks=hd:fd0:/ks.cfg <enter><wait>"]'
             $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '1024'
+
+            $InlineScriptHostname= "$InlineScriptNetworkManager && $InlineScriptHostname"
 
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
@@ -286,17 +289,16 @@ Function Show-rootpwMenu {
         function Show-buildMenu
         {
             param (
-                [string]$Title = "packer build packer_templates\"
+                [string]$Title = "Templates JSON files: packer_templates\"
             )
         
             Write-Host "================ $Title${env:GeneratedTemplate}.json ================"
         
-            Write-Host " [15] Begin Packer Build"
+            Write-Host " [B] Build image(s) from template"
         
         }
 
 Function BuildPacker {
-    
     $env:PACKER_LOG=1
     $env:PACKER_LOG_PATH="packer_templates/packerlog_${env:GeneratedTemplate}.txt"
     invoke-expression  "cmd /c start packer build packer_templates\${env:GeneratedTemplate}.json"
@@ -304,23 +306,27 @@ Function BuildPacker {
 
 function BuildMachineImage
 {
-param (
-    [string]$Title = 'Build Machine Image'
-) 
-Clear-Host
-$host.ui.RawUI.WindowTitle=$Title
 do
 {
 Clear-Host
+
+Write-Host "`n"
 Show-proxyMenu
+
 Show-packerMenu
+
 Show-rootpwMenu
+
 Show-directoryMenu
+
 Show-oraclesidMenu
+
 Show-zoneinfoMenu
+
 Show-buildMenu
 
-$selection = (Read-Host '  Choose a menu option, or press 0 to Exit').ToLower()
+Write-Host "`n"
+$selection = (Read-Host '  Choose a menu option, or press 0 to Exit').ToUpper()
 
 switch ($selection)
 {
@@ -379,8 +385,16 @@ switch ($selection)
     '14' {
         $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
     }
-    '15' {
-        BuildPacker
+    'B' {
+        if ([string]::IsNullOrEmpty($env:GeneratedTemplate))
+        {
+            Clear-Host
+            Write-Host " Required Template JSON file"
+            Show-packerMenu
+            Pause
+        } else {
+            BuildPacker
+        }
     }    
 }
 }
