@@ -26,8 +26,11 @@ echo 'INSTALLER:  install MySQL complete'
 
 sudo service mysqld start
 
-# Autostart MySQL on boot
+# Autostart MySQL on boot (chkconfig --list mysqld)
 
 chkconfig mysqld on
 
 # Alternatively you can run: /usr/bin/mysql_secure_installation
+
+# Install MyDumper
+# yum install -y https://github.com/maxbube/mydumper/releases/download/v0.9.5/mydumper-0.9.5-2.el6.x86_64.rpm

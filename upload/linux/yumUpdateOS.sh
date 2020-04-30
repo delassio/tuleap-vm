@@ -10,9 +10,13 @@ echo "System Updated..."
 
 echo 'Going to reboot to get updated system...'
 
-if [ `awk '{print $3}' /etc/centos-release` = 6.10  ]; then
+if [ -f /etc/centos-release  ]; then
+
+if [ `awk '{print $3}' /etc/centos-release` == 6.10  ]; then
 
 service network stop
+
+fi
 
 fi
 

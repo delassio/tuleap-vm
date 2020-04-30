@@ -62,7 +62,6 @@ function New-JsonTemplate
             $Json.variables.iso_checksum="7c0dee2a0494dabd84809b72ddb4b761f9ef92b78a506aef709b531c54d30770"
 
             $Json.builders[0].boot_command='["<tab> text ks=hd:fd0:/ks.cfg <enter><wait>"]'
-            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '1024'
 
             $InlineScriptHostname= "$InlineScriptNetworkManager && $InlineScriptHostname"
 
@@ -72,16 +71,16 @@ function New-JsonTemplate
         'centos7' {
             $Json.variables.guest_os_type="centos7-64"
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
-            $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-1908.iso"
-            $Json.variables.iso_checksum="9a2c47d97b9975452f7d582264e9fc16d108ed8252ac6816239a3b58cef5c53d"
+            $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-2003.iso"
+            $Json.variables.iso_checksum="659691c28a0e672558b003d223f83938f254b39875ee7559d1a4a14c79173193"
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'oraclelinux' {
             $Json.variables.guest_os_type="oraclelinux7-64"
             $Json.variables.floppy_files="kickstart/oraclelinux7/ks.cfg"
-            $Json.variables.iso_url="put_files_here/V983339-01.iso"
-            $Json.variables.iso_checksum="1D06CEF6A518C32C0E7ADCAD0A99A8EFBC7516066DE41118EBF49002C15EA84D"
+            $Json.variables.iso_url="put_files_here/V995537-01.iso"
+            $Json.variables.iso_checksum="6E1069FF42F7E59B19AF4E2FCACAE2FCA3F195C7F2904275B0DF386EFDCD616D"
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptUpdateOS"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
@@ -121,8 +120,8 @@ function New-JsonTemplate
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
 
-            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'cpus' -Value '2'
-            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '4096'
+            $Json.builders[0].cpus="2"
+            $Json.builders[0].memory="4096"
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/oracledatabase'
