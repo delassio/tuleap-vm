@@ -22,7 +22,7 @@
   "guest_os_type": "{{ user `guest_os_type` }}",
   "ssh_username": "{{ user `ssh_username` }}",
   "ssh_password": "{{ user `ssh_password` }}",
-  "ssh_timeout": "20m",
+  "ssh_timeout": "10m",
   "floppy_files": [
           "{{ user `floppy_files` }}"
         ],

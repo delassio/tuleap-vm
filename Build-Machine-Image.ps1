@@ -85,7 +85,7 @@ function New-JsonTemplate
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'perconamysql' {
-            $TemplateJsonFile = New-JsonTemplate "centos"
+            $TemplateJsonFile = New-JsonTemplate "centos7"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
             Remove-Item $TemplateJsonFile
             
@@ -95,8 +95,8 @@ function New-JsonTemplate
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
 
-            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'cpus' -Value '2'
-            $Json.builders[0] | Add-Member -Type NoteProperty -Name 'memory' -Value '4096'
+            $Json.builders[0].cpus="2"
+            $Json.builders[0].memory="4096"
 
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
             $Json.provisioners[2] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/percona'
@@ -130,6 +130,13 @@ function New-JsonTemplate
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value 'put_files_here/LINUX.X64_193000_db_home.zip'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp/LINUX.X64_193000_db_home.zip'
+            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'max_retries' -Value '3'
+
+            $provisionersshell=$Json.provisioners[1]
+            $provisionersfile=$Json.provisioners[3]
+            
+            $Json.provisioners[1]=$provisionersfile
+            $Json.provisioners[3]=$provisionersshell
 
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracle"
