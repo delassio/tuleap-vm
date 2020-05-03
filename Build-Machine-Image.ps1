@@ -130,7 +130,6 @@ function New-JsonTemplate
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'source' -Value 'put_files_here/LINUX.X64_193000_db_home.zip'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp/LINUX.X64_193000_db_home.zip'
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'max_retries' -Value '3'
 
             $provisionersshell=$Json.provisioners[1]
             $provisionersfile=$Json.provisioners[3]
