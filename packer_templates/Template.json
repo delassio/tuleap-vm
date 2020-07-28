@@ -1,59 +1,52 @@
 {
-"variables": {
-"guest_os_type": "",
-"floppy_files": "",
-"iso_url": "put_files_here/",
-"iso_checksum_type": "sha256",
-"iso_checksum": "",
-"ssh_username": "root",
-"ssh_password": "{{env `rootpw`}}",
-"hostname": "",
-"dnsuffix":"{{env `USERDNSDOMAIN`}}",
-"proxy":"{{env `http_proxy`}}"
-},
-
-"builders": [
-{
-  "type": "vmware-iso",
-  "vm_name": "{{ user `hostname` }}",
-  "iso_url": "{{ user `iso_url` }}",
-  "iso_checksum": "{{ user `iso_checksum` }}",
-  "iso_checksum_type": "{{ user `iso_checksum_type` }}",
-  "guest_os_type": "{{ user `guest_os_type` }}",
-  "ssh_username": "{{ user `ssh_username` }}",
-  "ssh_password": "{{ user `ssh_password` }}",
-  "ssh_timeout": "10m",
-  "floppy_files": [
-          "{{ user `floppy_files` }}"
-        ],
-  "boot_command": [
-  "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/ks.cfg <enter><wait>"
+  "builders": [
+    {
+      "boot_command": [
+        "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/ks.cfg <enter><wait>"
+      ],
+      "cpus": "2",
+      "floppy_files": [
+        "{{ user `floppy_files` }}"
+      ],
+      "guest_os_type": "{{ user `guest_os_type` }}",
+      "iso_checksum": "{{ user `iso_checksum` }}",
+      "iso_url": "{{ user `iso_url` }}",
+      "memory": "1024",
+      "shutdown_command": "shutdown -P now",
+      "ssh_password": "{{ user `ssh_password` }}",
+      "ssh_timeout": "10m",
+      "ssh_username": "{{ user `ssh_username` }}",
+      "type": "vmware-iso",
+      "vm_name": "{{ user `hostname` }}"
+    }
   ],
-  "shutdown_command": "shutdown -P now",
-  "cpus": "2",
-  "memory": "1024"
+  "provisioners": [
+    {
+      "destination": "/tmp",
+      "source": "upload/linux",
+      "type": "file"
+    },
+    {
+      "environment_vars": [
+        "proxy={{user `proxy`}}",
+        "hostname={{ user `hostname` }}",
+        "domainname={{user `dnsuffix`}}"
+      ],
+      "inline": [
+        "find /tmp -type f -iname '*.sh' -exec chmod +x {} \\; \u0026\u0026 /tmp/linux/setEnvironmentVariables.sh"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "dnsuffix": "{{env `USERDNSDOMAIN`}}",
+    "floppy_files": "",
+    "guest_os_type": "",
+    "hostname": "",
+    "iso_checksum": "",
+    "iso_url": "put_files_here/",
+    "proxy": "{{env `http_proxy`}}",
+    "ssh_password": "{{env `rootpw`}}",
+    "ssh_username": "root"
   }
-],
-
-"provisioners": [  
-  
-  {
-    "type": "file",
-    "source": "upload/linux",
-    "destination": "/tmp"
-  },
-
-  {
-    "type": "shell",
-    "inline": [
-      "find /tmp -type f -iname '*.sh' -exec chmod +x {} \\; && /tmp/linux/setEnvironmentVariables.sh"
-    ],
-	"environment_vars": [
-      "proxy={{user `proxy`}}",
-      "hostname={{ user `hostname` }}",
-      "domainname={{user `dnsuffix`}}"
-	  ]
-  }
-  
-  ]
 }
