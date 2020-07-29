@@ -1,4 +1,4 @@
-Prime VM Builder (For VMware Workstation)
+Build Automated Machine Images with Packer (VMware Workstation)
 ===============================
 
 Welcome to the packer build for VMware Workstation.  
