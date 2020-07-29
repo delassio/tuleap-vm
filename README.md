@@ -1,4 +1,4 @@
-DevOps Prime VM Builder (VMware Workstation)
+Prime VM Builder (For VMware Workstation)
 ===============================
 
 Welcome to the packer build for VMware Workstation.  
