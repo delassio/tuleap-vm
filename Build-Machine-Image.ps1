@@ -382,7 +382,7 @@ switch ($selection)
         $env:id_machine_image = -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
     }
     '12' {
-        $env:oracle_db_name = Read-Host -Prompt "Enter ORACLE SID Name: "
+        $env:oracle_db_name = (Read-Host -Prompt "Enter ORACLE SID Name: ").ToUpper()
     }
     '13' {
         $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet ?"
