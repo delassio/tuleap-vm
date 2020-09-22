@@ -54,6 +54,12 @@ echo "export PATH=\$PATH:\$ORACLE_HOME/bin" >> /home/oracle/.bashrc
 
 echo 'INSTALLER: Environment variables set'
 
+sudo cp -f /tmp/linux/updateHostname.sh /home/oracle/setHosts.sh
+sudo chmod a+rx /home/oracle/setHosts.sh
+
+
+echo "INSTALLER: setHosts.sh file setup";
+
 # Install Oracle
 
 unzip /tmp/LINUX.X64_193000_db_home.zip -d $ORACLE_HOME/
@@ -67,7 +73,6 @@ su -l oracle -c "yes | $ORACLE_HOME/runInstaller -silent -ignorePrereqFailure -w
 $ORACLE_BASE/oraInventory/orainstRoot.sh
 $ORACLE_HOME/root.sh
 rm -f /home/oracle/db_install.rsp
-rm -f /tmp/LINUX.X64_193000_db_home.zip
 
 echo 'INSTALLER: Oracle software installed'
 
@@ -161,5 +166,9 @@ for f in /tmp/oracledatabase/userscripts/*
 echo 'INSTALLER: Done running user-defined post-setup scripts'
 
 echo "ORACLE PASSWORD FOR SYS AND SYSTEM: $ORACLE_PWD";
+
+echo 'INSTALLER: Clearing Out Temporary Directories'
+
+rm -rfv /tmp/
 
 echo "INSTALLER: Installation complete, database ready to use!";
