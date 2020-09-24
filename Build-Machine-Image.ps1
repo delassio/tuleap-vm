@@ -408,7 +408,7 @@ until ( $selection -eq '0')
 }
 
 $env:rootpw="server"
-$env:oracle_db_name="NonCDB"
+$env:oracle_db_name="NONCDB"
 $env:oracle_db_characterSet="AL32UTF8"
 $env:zoneinfo="UTC"
 $env:GeneratedTemplate = ""
