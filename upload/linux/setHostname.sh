@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Abort on any error
+set -e
+
 if [ -z "$hostname" ]; then
 
 hostname="localhost"
@@ -51,7 +54,7 @@ fi
 
 # Copy script to root directory
 
-sudo cp -f /tmp/linux/updateHostname.sh /root/setHosts.sh
-sudo chmod a+rx /root/setHosts.sh
+sudo cp -f /tmp/linux/setHostname.sh /root
+sudo chmod a+rx /root/setHostname.sh
 
 echo "LINUX INSTALLER: setHosts.sh file setup";

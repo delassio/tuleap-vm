@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Abort on any error
+set -e
+
 
 function checkProxySSL {
 

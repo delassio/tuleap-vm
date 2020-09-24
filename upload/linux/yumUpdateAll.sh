@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# Abort on any error
+set -e
+
 
 # get up to date
 
 
-sudo yum -y upgrade
+sudo yum -y update
 
 echo "System Updated..."
 

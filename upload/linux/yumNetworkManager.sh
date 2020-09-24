@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Abort on any error
+set -e
 
 # install NetworkManager To Fix Network ISSUE
 

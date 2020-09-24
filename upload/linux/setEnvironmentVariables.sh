@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Abort on any error
+set -e
 
 # set environment variables
 
