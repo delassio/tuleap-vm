@@ -51,7 +51,7 @@ fi
 
 # Copy script to root directory
 
-sudo cp -f /tmp/linux/setHostname.sh /root
+sudo cp -f /tmp/linux/updateHostname.sh /root/setHosts.sh
 sudo chmod a+rx /root/setHosts.sh
 
 echo "LINUX INSTALLER: setHosts.sh file setup";
