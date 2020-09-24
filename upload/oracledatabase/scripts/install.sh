@@ -16,35 +16,35 @@
 # Abort on any error
 set -e
 
-echo 'INSTALLER: Started up'
+echo 'ORACLE INSTALLER: Started up'
 
 # get up to date
 yum upgrade -y
 
-echo 'INSTALLER: System updated'
+echo 'ORACLE INSTALLER: System updated'
 
 # fix locale warning
 yum reinstall -y glibc-common
 echo LANG=en_US.utf-8 >> /etc/environment
 echo LC_ALL=en_US.utf-8 >> /etc/environment
 
-echo 'INSTALLER: Locale set'
+echo 'ORACLE INSTALLER: Locale set'
 
 # set system time zone
 sudo timedatectl set-timezone $SYSTEM_TIMEZONE
-echo "INSTALLER: System time zone set to $SYSTEM_TIMEZONE"
+echo "ORACLE INSTALLER: System time zone set to $SYSTEM_TIMEZONE"
 
 # Install Oracle Database prereq and openssl packages
 yum install -y oracle-database-preinstall-19c openssl
 
-echo 'INSTALLER: Oracle preinstall and openssl complete'
+echo 'ORACLE INSTALLER: Oracle preinstall and openssl complete'
 
 # create directories
 mkdir -p $ORACLE_HOME
 mkdir -p /u01/app
 ln -s $ORACLE_BASE /u01/app/oracle
 
-echo 'INSTALLER: Oracle directories created'
+echo 'ORACLE INSTALLER: Oracle directories created'
 
 # set environment variables
 echo "export ORACLE_BASE=$ORACLE_BASE" >> /home/oracle/.bashrc
@@ -52,13 +52,7 @@ echo "export ORACLE_HOME=$ORACLE_HOME" >> /home/oracle/.bashrc
 echo "export ORACLE_SID=$ORACLE_SID" >> /home/oracle/.bashrc
 echo "export PATH=\$PATH:\$ORACLE_HOME/bin" >> /home/oracle/.bashrc
 
-echo 'INSTALLER: Environment variables set'
-
-sudo cp -f /tmp/linux/updateHostname.sh /home/oracle/setHosts.sh
-sudo chmod a+rx /home/oracle/setHosts.sh
-
-
-echo "INSTALLER: setHosts.sh file setup";
+echo 'ORACLE INSTALLER: Environment variables set'
 
 # Install Oracle
 
@@ -74,7 +68,7 @@ $ORACLE_BASE/oraInventory/orainstRoot.sh
 $ORACLE_HOME/root.sh
 rm -f /home/oracle/db_install.rsp
 
-echo 'INSTALLER: Oracle software installed'
+echo 'ORACLE INSTALLER: Oracle software installed'
 
 # create sqlnet.ora parameters
 
@@ -82,7 +76,7 @@ su -l oracle -c "echo 'NAME.DIRECTORY_PATH= (TNSNAMES, EZCONNECT, HOSTNAME)' > $
 su -l oracle -c "echo 'SQLNET.ALLOWED_LOGON_VERSION_SERVER=8' >> $ORACLE_HOME/network/admin/sqlnet.ora"
 su -l oracle -c "echo 'SQLNET.ALLOWED_LOGON_VERSION_CLIENT=8' >> $ORACLE_HOME/network/admin/sqlnet.ora"
 
-echo 'INSTALLER: SQLNET.ORA Network Configuration File created'
+echo 'ORACLE INSTALLER: SQLNET.ORA Network Configuration File created'
 
 # Listener.ora: Check Listener Registration (LREG)
 
@@ -119,10 +113,10 @@ su -l oracle -c "dbca -silent -createDatabase -responseFile /home/oracle/dbca.rs
 
 rm -f /home/oracle/dbca.rsp
 
-echo 'INSTALLER: Database created'
+echo 'ORACLE INSTALLER: Database created'
 
 sed 's/:N/:Y/g' /etc/oratab | sudo tee /etc/oratab > /dev/null
-echo 'INSTALLER: Oratab configured'
+echo 'ORACLE INSTALLER: Oratab configured'
 
 # configure systemd to start oracle instance on startup
 sudo cp -f /tmp/oracledatabase/scripts/oracle-rdbms.service /etc/systemd/system/
@@ -130,45 +124,52 @@ sudo sed -i -e "s|###ORACLE_HOME###|$ORACLE_HOME|g" /etc/systemd/system/oracle-r
 sudo systemctl daemon-reload
 sudo systemctl enable oracle-rdbms
 sudo systemctl start oracle-rdbms
-echo "INSTALLER: Created and enabled oracle-rdbms systemd's service"
+echo "ORACLE INSTALLER: Created and enabled oracle-rdbms systemd's service"
 
 sudo cp -f /tmp/oracledatabase/scripts/setPassword.sh /home/oracle/
 sudo chmod a+rx /home/oracle/setPassword.sh
 
 
-echo "INSTALLER: setPassword.sh file setup";
+echo "ORACLE INSTALLER: setPassword.sh file setup";
 
 # run user-defined post-setup scripts
-echo 'INSTALLER: Running user-defined post-setup scripts'
+echo 'ORACLE INSTALLER: Running user-defined post-setup scripts'
 
 for f in /tmp/oracledatabase/userscripts/*
   do
     case "${f,,}" in
       *.sh)
-        echo "INSTALLER: Running $f"
+        echo "ORACLE INSTALLER: Running $f"
         . "$f"
-        echo "INSTALLER: Done running $f"
+        echo "ORACLE INSTALLER: Done running $f"
         ;;
       *.sql)
-        echo "INSTALLER: Running $f"
+        echo "ORACLE INSTALLER: Running $f"
         su -l oracle -c "echo 'exit' | sqlplus -s / as sysdba @\"$f\""
-        echo "INSTALLER: Done running $f"
+        echo "ORACLE INSTALLER: Done running $f"
         ;;
       /tmp/oracledatabase/userscripts/put_custom_scripts_here.txt)
         :
         ;;
       *)
-        echo "INSTALLER: Ignoring $f"
+        echo "ORACLE INSTALLER: Ignoring $f"
         ;;
     esac
   done
 
-echo 'INSTALLER: Done running user-defined post-setup scripts'
+echo 'ORACLE INSTALLER: Done running user-defined post-setup scripts'
 
 echo "ORACLE PASSWORD FOR SYS AND SYSTEM: $ORACLE_PWD";
 
-echo 'INSTALLER: Clearing Out Temporary Directories'
+sudo cp -rf /tmp/oracledatabase/dump /home/oracle
+sudo chmod a+rx /home/oracle/dump/import.sh
 
-rm -rfv /tmp/
 
-echo "INSTALLER: Installation complete, database ready to use!";
+echo "ORACLE INSTALLER: dump import directory setup";
+
+echo 'ORACLE INSTALLER: Clearing Out Temporary Directories'
+
+find /tmp  -maxdepth 1 -mindepth 1 -type d -amin +0 -exec rm -rv {} \;
+find /tmp -type f -amin +0 -exec rm -rv {} \;
+
+echo "ORACLE INSTALLER: Installation complete, database ready to use!";

@@ -3,7 +3,7 @@
 if [ -z "$hostname" ]; then
 
 hostname="localhost"
-echo "INSTALLER: Empty hostname Variable : localhost will be used."
+echo "LINUX INSTALLER: Empty hostname Variable : localhost will be used."
 
 fi
 
@@ -18,7 +18,7 @@ echo "INSTALLER(CentOS 6): FQDN : "$fqdn" will be used."
 else
 hostnamectl set-hostname $fqdn --static
 sudo systemctl restart systemd-hostnamed
-echo "INSTALLER: FQDN: "$fqdn" will be used."
+echo "LINUX INSTALLER: FQDN: "$fqdn" will be used."
 fi
 
 
@@ -33,7 +33,7 @@ echo "INSTALLER(CentOS 6): FQDN : "$fqdn" will be used."
 else
 hostnamectl set-hostname $fqdn --static
 sudo systemctl restart systemd-hostnamed
-echo "INSTALLER: FQDN: "$fqdn" will be used."    
+echo "LINUX INSTALLER: FQDN: "$fqdn" will be used."    
 fi
 
   
@@ -44,7 +44,14 @@ echo "INSTALLER(CentOS 6): /etc/sysconfig/network: $(cat /etc/sysconfig/network)
 echo $(hostname -I) $(hostname) $(hostname -s) > /etc/hosts
 echo "INSTALLER(CentOS 6): /etc/hosts: $(cat /etc/hosts)"
 else
-echo "INSTALLER: /etc/hostname: $(cat /etc/hostname)"
+echo "LINUX INSTALLER: /etc/hostname: $(cat /etc/hostname)"
 echo $(hostname -I) $(hostname) $(hostname -s) > /etc/hosts
-echo "INSTALLER: /etc/hosts: $(cat /etc/hosts)"
+echo "LINUX INSTALLER: /etc/hosts: $(cat /etc/hosts)"
 fi
+
+# Copy script to root directory
+
+sudo cp -f /tmp/linux/updateHostname.sh /root/setHosts.sh
+sudo chmod a+rx /root/setHosts.sh
+
+echo "LINUX INSTALLER: setHosts.sh file setup";

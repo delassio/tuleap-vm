@@ -35,7 +35,8 @@ function New-JsonTemplate
             $InlineScriptHostname="/tmp/linux/updateHostname.sh"            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
-            $InlineScriptOracle="/tmp/oracledatabase/scripts/install.sh && /tmp/oracledatabase/scripts/import.sh"
+            $InlineScriptOracleInstall="/tmp/oracledatabase/scripts/install.sh"
+            $InlineScriptOracleImport="/home/oracle/dump/import.sh"
             $InlineScriptPercona="/tmp/percona/scripts/install.sh"
 
             $EnvVarsOracle=@( "ORACLE_BASE=/opt/oracle",
@@ -138,7 +139,7 @@ function New-JsonTemplate
             $Json.provisioners[3]=$provisionersshell
 
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracle"
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracleInstall"
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsOracle
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 

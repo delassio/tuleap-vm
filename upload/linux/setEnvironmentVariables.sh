@@ -8,4 +8,4 @@ echo "export hostname=$hostname" >> /root/.bashrc
 echo "export domainname=$domainname" >> /root/.bashrc
 
 
-echo 'INSTALLER: Environment Variables Set'
+echo 'LINUX INSTALLER: Environment Variables Set'
