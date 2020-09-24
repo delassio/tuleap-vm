@@ -18,11 +18,6 @@ set -e
 
 echo 'ORACLE INSTALLER: Started up'
 
-# get up to date
-yum upgrade -y
-
-echo 'ORACLE INSTALLER: System updated'
-
 # fix locale warning
 yum reinstall -y glibc-common
 echo LANG=en_US.utf-8 >> /etc/environment
@@ -162,10 +157,7 @@ echo 'ORACLE INSTALLER: Done running user-defined post-setup scripts'
 echo "ORACLE PASSWORD FOR SYS AND SYSTEM: $ORACLE_PWD";
 
 sudo cp -rf /tmp/oracledatabase/dump /home/oracle
-chown oracle:oinstall -R /home/oracle/dump
-sudo mv -f /home/oracle/dump/import.sh /home/oracle/
-sudo chmod a+rx /home/oracle/import.sh
-
+sudo chmod a+rx /home/oracle/dump/import.sh
 
 echo "ORACLE INSTALLER: dump import directory setup";
 
