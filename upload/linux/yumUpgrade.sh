@@ -7,7 +7,7 @@ set -e
 # get up to date
 
 
-sudo yum -y update
+sudo yum upgrade -y
 
 echo "System Updated..."
 

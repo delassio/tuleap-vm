@@ -31,7 +31,7 @@ function New-JsonTemplate
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh" 
             $InlineScriptNetworkManager="/tmp/linux/yumNetworkManager.sh"  
             $InlineScriptProxy="/tmp/linux/yumUpdateConfig.sh"
-            $InlineScriptYumUpdate="/tmp/linux/yumUpdateAll.sh"
+            $InlineScriptYum="/tmp/linux/yumUpgrade.sh"
             $InlineScriptHostname="/tmp/linux/setHostname.sh"            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
@@ -66,7 +66,7 @@ function New-JsonTemplate
 
             $InlineScriptHostname= "$InlineScriptNetworkManager && $InlineScriptHostname"
 
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYumUpdate"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'centos7' {
@@ -74,7 +74,7 @@ function New-JsonTemplate
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
             $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-2003.iso"
             $Json.variables.iso_checksum="659691c28a0e672558b003d223f83938f254b39875ee7559d1a4a14c79173193"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYumUpdate"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'oraclelinux' {
@@ -82,7 +82,7 @@ function New-JsonTemplate
             $Json.variables.floppy_files="kickstart/oraclelinux7/ks.cfg"
             $Json.variables.iso_url="put_files_here/V995537-01.iso"
             $Json.variables.iso_checksum="6E1069FF42F7E59B19AF4E2FCACAE2FCA3F195C7F2904275B0DF386EFDCD616D"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYumUpdate"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'perconamysql' {
