@@ -51,7 +51,7 @@ echo 'ORACLE INSTALLER: Environment variables set'
 
 # Install Oracle
 
-unzip /tmp/LINUX.X64_193000_db_home.zip -d $ORACLE_HOME/
+unzip -qq /tmp/LINUX.X64_193000_db_home.zip -d $ORACLE_HOME/
 cp -f /tmp/oracledatabase/ora-response/db_install.rsp.tmpl /home/oracle/db_install.rsp
 sed -i -e "s|###ORACLE_BASE###|$ORACLE_BASE|g" /home/oracle/db_install.rsp
 sed -i -e "s|###ORACLE_HOME###|$ORACLE_HOME|g" /home/oracle/db_install.rsp
