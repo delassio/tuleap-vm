@@ -6,7 +6,7 @@ set -e
 
 # get up to date
 
-if [ `awk '{print $3}' /etc/centos-release` = 6.10  ]; then
+if [ -f /etc/centos-release  ] && [ `awk '{print $3}' /etc/centos-release` == 6.10  ]; then
 
 yum -y install yum-plugin-security
 
