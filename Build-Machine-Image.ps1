@@ -31,19 +31,8 @@ function New-JsonTemplate
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh" 
             $InlineScriptNetworkManager="/tmp/linux/yumNetworkManager.sh"  
             $InlineScriptProxy="/tmp/linux/yumUpdateConfig.sh"
-
-            switch ($env:yumupdate) {
-                { 'no', 'n'  -contains $_ } { $InlineScriptYum="/tmp/linux/yumUpdateLess.sh" 
-                                              $env:yumupdate = "NO"}
-                { 'security', 'sec', 's' -contains $_ } { $InlineScriptYum="/tmp/linux/yumUpdateSecurity.sh" 
-                                                          $env:yumupdate = "SECURITY" }
-                Default {
-                    $InlineScriptYum="/tmp/linux/yumUpgrade.sh"
-                    $env:yumupdate = "ALL"
-                }
-            }
-
-            $InlineScriptHostname="/tmp/linux/setHostname.sh"            
+            $InlineScriptHostname="/tmp/linux/setHostname.sh"
+            $InlineScriptYum=$env:yumupdate            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
             $InlineScriptOracleInstall="/tmp/oracledatabase/scripts/install.sh"
@@ -297,9 +286,9 @@ Function Show-rootpwMenu {
                 [string]$Title = 'Oracle Linux Updates:'
             )
         
-            Write-Host "================ $Title [$env:yumupdate] ================"
+            Write-Host "================ $Title [$env:yumupdatemenu] ================"
         
-            Write-Host " [15] Configure Yum Update (no, security) "
+            Write-Host " [15] Configure Yum Update (ALL PACKAGES, ONLY SECURITY, NO UPDATES) "
         
         }
 
@@ -417,7 +406,15 @@ switch ($selection)
         $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
     }
     '15' {
-        $env:yumupdate = Read-Host -Prompt "Options (no, security, default = All) ?"
+        $env:yumupdate = (Read-Host -Prompt "Do you want to install the updates? ([N]o, [S]ecurity, Default = Yes) ?").ToUpper()
+        switch ($env:yumupdate) {
+            { 'no', 'n'  -contains $_ } { $env:yumupdate="/tmp/linux/yumUpdateLess.sh"
+            $env:yumupdatemenu="NO UPDATES" }
+            { 'security', 's' -contains $_ } { $env:yumupdate="/tmp/linux/yumUpdateSecurity.sh" 
+            $env:yumupdatemenu="ONLY SECURITY"}
+            Default { $env:yumupdate="/tmp/linux/yumUpgrade.sh" 
+            $env:yumupdatemenu="ALL PACKAGES"}
+        }
     }
     'B' {
         if ([string]::IsNullOrEmpty($env:GeneratedTemplate))
@@ -440,7 +437,8 @@ $env:oracle_db_name="NONCDB"
 $env:oracle_db_characterSet="AL32UTF8"
 $env:zoneinfo="UTC"
 $env:GeneratedTemplate = ""
-$env:yumupdate = "ALL"
+$env:yumupdate="/tmp/linux/yumUpgrade.sh"
+$env:yumupdatemenu="ALL PACKAGES"
 BuildMachineImage
 Pause
 Clear-Host
