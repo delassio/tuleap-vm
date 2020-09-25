@@ -31,7 +31,18 @@ function New-JsonTemplate
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh" 
             $InlineScriptNetworkManager="/tmp/linux/yumNetworkManager.sh"  
             $InlineScriptProxy="/tmp/linux/yumUpdateConfig.sh"
-            $InlineScriptYum="/tmp/linux/yumUpgrade.sh"
+
+            switch ($env:yumupdate) {
+                { 'no', 'n'  -contains $_ } { $InlineScriptYum="/tmp/linux/yumUpdateLess.sh" 
+                                              $env:yumupdate = "NO"}
+                { 'security', 'sec', 's' -contains $_ } { $InlineScriptYum="/tmp/linux/yumUpdateSecurity.sh" 
+                                                          $env:yumupdate = "SECURITY" }
+                Default {
+                    $InlineScriptYum="/tmp/linux/yumUpgrade.sh"
+                    $env:yumupdate = "ALL"
+                }
+            }
+
             $InlineScriptHostname="/tmp/linux/setHostname.sh"            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
@@ -280,6 +291,18 @@ Function Show-rootpwMenu {
         
         }
 
+        function Show-oracleLinuxUpdates
+        {
+            param (
+                [string]$Title = 'Oracle Linux Updates:'
+            )
+        
+            Write-Host "================ $Title [$env:yumupdate] ================"
+        
+            Write-Host " [15] Configure Yum Update (no, security) "
+        
+        }
+
         function Show-zoneinfoMenu
         {
             param (
@@ -328,6 +351,8 @@ Show-directoryMenu
 Show-oraclesidMenu
 
 Show-zoneinfoMenu
+
+Show-oracleLinuxUpdates
 
 Show-buildMenu
 
@@ -391,6 +416,9 @@ switch ($selection)
     '14' {
         $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
     }
+    '15' {
+        $env:yumupdate = Read-Host -Prompt "Options (no, security, default = All) ?"
+    }
     'B' {
         if ([string]::IsNullOrEmpty($env:GeneratedTemplate))
         {
@@ -412,6 +440,7 @@ $env:oracle_db_name="NONCDB"
 $env:oracle_db_characterSet="AL32UTF8"
 $env:zoneinfo="UTC"
 $env:GeneratedTemplate = ""
+$env:yumupdate = "ALL"
 BuildMachineImage
 Pause
 Clear-Host

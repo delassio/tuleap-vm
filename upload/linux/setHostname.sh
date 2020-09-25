@@ -57,4 +57,4 @@ fi
 sudo cp -f /tmp/linux/setHostname.sh /root
 sudo chmod a+rx /root/setHostname.sh
 
-echo "LINUX INSTALLER: setHosts.sh file setup";
+echo "LINUX INSTALLER: setHostname.sh file setup";
