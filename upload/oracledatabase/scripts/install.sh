@@ -50,8 +50,9 @@ echo "export PATH=\$PATH:\$ORACLE_HOME/bin" >> /home/oracle/.bashrc
 echo 'ORACLE INSTALLER: Environment variables set'
 
 # Install Oracle
-
+echo "ORACLE INSTALLER: Extract Oracle Software"
 unzip -qq /tmp/LINUX.X64_193000_db_home.zip -d $ORACLE_HOME/
+echo "ORACLE INSTALLER: Extraction complete"
 cp -f /tmp/oracledatabase/ora-response/db_install.rsp.tmpl /home/oracle/db_install.rsp
 sed -i -e "s|###ORACLE_BASE###|$ORACLE_BASE|g" /home/oracle/db_install.rsp
 sed -i -e "s|###ORACLE_HOME###|$ORACLE_HOME|g" /home/oracle/db_install.rsp
