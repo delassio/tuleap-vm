@@ -358,6 +358,7 @@ $selection = (Read-Host '  Choose a menu option, or press 0 to Exit').ToUpper()
 switch ($selection)
 {
     '0' {
+       Clear-JsonTemplate
        break
     }
     'P' {
