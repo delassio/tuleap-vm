@@ -27,6 +27,9 @@ function New-JsonTemplate
     param (
         [string]$machineImage
     )
+
+            Clear-JsonTemplate
+
             $InlineScriptPermission="find /tmp -type f -iname '*.sh' -exec chmod +x {} \;"
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh" 
             $InlineScriptNetworkManager="/tmp/linux/yumNetworkManager.sh"  
@@ -283,10 +286,10 @@ Function Show-rootpwMenu {
         function Show-oracleLinuxUpdates
         {
             param (
-                [string]$Title = 'Oracle Linux Updates:'
+                [string]$Title = 'Linux Updates'
             )
         
-            Write-Host "================ $Title [$env:yumupdatemenu] ================"
+            Write-Host "================ $Title ================"
         
             Write-Host " [15] Configure Yum Update (ALL PACKAGES, ONLY SECURITY, NO UPDATES) "
         
@@ -307,13 +310,12 @@ Function Show-rootpwMenu {
         function Show-buildMenu
         {
             param (
-                [string]$Title = "Templates JSON files: packer_templates\"
+                [string]$Title = "BAMIP FOR VMWARE WORKSTATION"
             )
-        
-            Write-Host "================ $Title${env:GeneratedTemplate}.json ================"
-        
-            Write-Host " [B] Build image(s) from template"
-        
+            
+            Write-Host "================ $Title ================"
+            Write-Host " [B] Build Image ${env:GeneratedTemplateMenu} ${env:yumupdatemenu}"
+            Write-Host "`n"
         }
 
 Function BuildPacker {
@@ -322,13 +324,20 @@ Function BuildPacker {
     invoke-expression  "cmd /c start packer build packer_templates\${env:GeneratedTemplate}.json"
 }
 
-function BuildMachineImage
+Function Clear-JsonTemplate {
+    Get-ChildItem packer_templates -Recurse -Include *.json -Exclude Template.json | Remove-Item -Recurse -Force
+    $env:GeneratedTemplate = ""
+    $env:GeneratedTemplateMenu = "Empty"
+}
+
+function Build-MachineImage
 {
 do
 {
 Clear-Host
 
-Write-Host "`n"
+Show-buildMenu
+
 Show-proxyMenu
 
 Show-packerMenu
@@ -342,8 +351,6 @@ Show-oraclesidMenu
 Show-zoneinfoMenu
 
 Show-oracleLinuxUpdates
-
-Show-buildMenu
 
 Write-Host "`n"
 $selection = (Read-Host '  Choose a menu option, or press 0 to Exit').ToUpper()
@@ -359,68 +366,83 @@ switch ($selection)
     '1' {
         $JsonTemplate=New-JsonTemplate "centos6"
         Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+        $env:GeneratedTemplateMenu = "[CentOS 6]"
     }
     '2' {
         $JsonTemplate=New-JsonTemplate "centos7"
         Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+        $env:GeneratedTemplateMenu = "[CentOS 7]"
     }
     '3' {
         $JsonTemplate=New-JsonTemplate "oraclelinux"
         Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+        $env:GeneratedTemplateMenu = "[Oracle Linux 7]"
     } 
     '4' {
         $JsonTemplate=New-JsonTemplate "tuleap"
         Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+        $env:GeneratedTemplateMenu = "[Tuleap]"
     }
     '5' {
         $JsonTemplate=New-JsonTemplate "tuleapldap"
         Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+        $env:GeneratedTemplateMenu = "[Tuleap LDAP]"
     }
     '6' {
         $JsonTemplate=New-JsonTemplate "oracledatabase"
-        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force 
+        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+        $env:GeneratedTemplateMenu = "[Oracle Database 19c]" 
     }
     '7' {
         $JsonTemplate=New-JsonTemplate "perconamysql"
         Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+        $env:GeneratedTemplateMenu = "[Percona Server for MySQL]"
     }
     '8' {
         $env:rootpw= Read-Host -Prompt "Enter root password ?"
+        Clear-JsonTemplate
     }
     '9' {
         $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
+        Clear-JsonTemplate
     }
     '10' {
         $env:id_machine_image = Read-Host -Prompt "Enter Output ID: "
+        Clear-JsonTemplate
     } 
     '11' {
         $env:id_machine_image = -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
+        Clear-JsonTemplate
     }
     '12' {
         $env:oracle_db_name = (Read-Host -Prompt "Enter ORACLE SID Name: ").ToUpper()
+        Clear-JsonTemplate
     }
     '13' {
         $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet ?"
+        Clear-JsonTemplate
     }
     '14' {
         $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
+        Clear-JsonTemplate
     }
     '15' {
         $env:yumupdate = (Read-Host -Prompt "Do you want to install the updates? ([N]o, [S]ecurity, Default = Yes) ?").ToUpper()
         switch ($env:yumupdate) {
             { 'no', 'n'  -contains $_ } { $env:yumupdate="/tmp/linux/yumUpdateLess.sh"
-            $env:yumupdatemenu="NO UPDATES" }
+            $env:yumupdatemenu="[NO UPDATES]" }
             { 'security', 's' -contains $_ } { $env:yumupdate="/tmp/linux/yumUpdateSecurity.sh" 
-            $env:yumupdatemenu="ONLY SECURITY"}
+            $env:yumupdatemenu="[ONLY SECURITY]"}
             Default { $env:yumupdate="/tmp/linux/yumUpgrade.sh" 
-            $env:yumupdatemenu="ALL PACKAGES"}
+            $env:yumupdatemenu="[ALL PACKAGES]"}
         }
+        Clear-JsonTemplate
     }
     'B' {
         if ([string]::IsNullOrEmpty($env:GeneratedTemplate))
         {
             Clear-Host
-            Write-Host " Required Template JSON file"
+            Write-Host " Please Generate Template File:"
             Show-packerMenu
             Pause
         } else {
@@ -436,9 +458,9 @@ $env:rootpw="server"
 $env:oracle_db_name="NONCDB"
 $env:oracle_db_characterSet="AL32UTF8"
 $env:zoneinfo="UTC"
-$env:GeneratedTemplate = ""
+Clear-JsonTemplate
 $env:yumupdate="/tmp/linux/yumUpgrade.sh"
-$env:yumupdatemenu="ALL PACKAGES"
-BuildMachineImage
+$env:yumupdatemenu="[ALL PACKAGES]"
+Build-MachineImage
 Pause
 Clear-Host
