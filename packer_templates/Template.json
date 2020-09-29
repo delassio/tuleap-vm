@@ -1,5 +1,17 @@
 {
-  "builders": [
+"variables": {
+"dnsuffix": "{{env `USERDNSDOMAIN`}}",
+"floppy_files": "",
+"guest_os_type": "",
+"hostname": "",
+"iso_checksum": "",
+"iso_url": "put_files_here/",
+"proxy": "{{env `http_proxy`}}",
+"ssh_password": "{{env `rootpw`}}",
+"ssh_username": "root",
+"tzoneinfo": "{{env `tzoneinfo`}}"
+},
+"builders": [
     {
       "boot_command": [
         "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/ks.cfg <enter><wait>"
@@ -20,7 +32,7 @@
       "vm_name": "{{ user `hostname` }}"
     }
   ],
-  "provisioners": [
+"provisioners": [
     {
       "destination": "/tmp",
       "source": "upload/linux",
@@ -30,23 +42,13 @@
       "environment_vars": [
         "proxy={{user `proxy`}}",
         "hostname={{ user `hostname` }}",
-        "domainname={{user `dnsuffix`}}"
+        "domainname={{user `dnsuffix`}}",
+        "SYSTEM_TIMEZONE={{user `tzoneinfo`}}"
       ],
       "inline": [
         "find /tmp -type f -iname '*.sh' -exec chmod +x {} \\; \u0026\u0026 /tmp/linux/setEnvironmentVariables.sh"
       ],
       "type": "shell"
     }
-  ],
-  "variables": {
-    "dnsuffix": "{{env `USERDNSDOMAIN`}}",
-    "floppy_files": "",
-    "guest_os_type": "",
-    "hostname": "",
-    "iso_checksum": "",
-    "iso_url": "put_files_here/",
-    "proxy": "{{env `http_proxy`}}",
-    "ssh_password": "{{env `rootpw`}}",
-    "ssh_username": "root"
-  }
+  ]
 }

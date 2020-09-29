@@ -25,10 +25,6 @@ echo LC_ALL=en_US.utf-8 >> /etc/environment
 
 echo 'ORACLE INSTALLER: Locale set'
 
-# set system time zone
-sudo timedatectl set-timezone $SYSTEM_TIMEZONE
-echo "ORACLE INSTALLER: System time zone set to $SYSTEM_TIMEZONE"
-
 # Install Oracle Database prereq and openssl packages
 yum install -y oracle-database-preinstall-19c openssl
 
@@ -50,9 +46,9 @@ echo "export PATH=\$PATH:\$ORACLE_HOME/bin" >> /home/oracle/.bashrc
 echo 'ORACLE INSTALLER: Environment variables set'
 
 # Install Oracle
-echo "ORACLE INSTALLER: Extract Oracle Software"
+echo "ORACLE INSTALLER: Extracting Oracle Database software. Please be patient..."
 unzip -qq /tmp/LINUX.X64_193000_db_home.zip -d $ORACLE_HOME/
-echo "ORACLE INSTALLER: Extraction complete"
+echo "ORACLE INSTALLER: Extracting Oracle Database software. Completed Successfully."
 cp -f /tmp/oracledatabase/ora-response/db_install.rsp.tmpl /home/oracle/db_install.rsp
 sed -i -e "s|###ORACLE_BASE###|$ORACLE_BASE|g" /home/oracle/db_install.rsp
 sed -i -e "s|###ORACLE_HOME###|$ORACLE_HOME|g" /home/oracle/db_install.rsp

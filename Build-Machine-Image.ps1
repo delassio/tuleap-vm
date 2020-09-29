@@ -25,16 +25,17 @@ catch {
 function New-JsonTemplate
 {
     param (
-        [string]$machineImage
+        [string]$Template
     )
 
-            Clear-JsonTemplate
+            # Clear-JsonTemplate
 
             $InlineScriptPermission="find /tmp -type f -iname '*.sh' -exec chmod +x {} \;"
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh" 
             $InlineScriptNetworkManager="/tmp/linux/yumNetworkManager.sh"  
             $InlineScriptProxy="/tmp/linux/yumUpdateConfig.sh"
             $InlineScriptHostname="/tmp/linux/setHostname.sh"
+            $InlineScriptTimezone="/tmp/linux/setTimezone.sh"
             $InlineScriptYum=$env:yumupdate            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
@@ -46,10 +47,7 @@ function New-JsonTemplate
                                 "ORACLE_HOME=/opt/oracle/product/19c/dbhome",
                                 "ORACLE_SID=${env:oracle_db_name}",
                                 "ORACLE_CHARACTERSET=${env:oracle_db_characterSet}",
-                                "ORACLE_EDITION=SE2",
-                                "SYSTEM_TIMEZONE=${env:zoneinfo}")
-
-            $EnvVarsPercona=@( "SYSTEM_TIMEZONE=${env:zoneinfo}")
+                                "ORACLE_EDITION=SE2")
             
             $TemplateJsonFile = "packer_templates\Template.json"
 
@@ -57,7 +55,7 @@ function New-JsonTemplate
 
             $Json.builders[0] | Add-Member -Type NoteProperty -Name "output_directory" -Value ""
             
-    switch ($machineImage)
+    switch ($Template)
     {
         'centos6' {
             $Json.variables.guest_os_type="centos6-64"
@@ -69,7 +67,7 @@ function New-JsonTemplate
 
             $InlineScriptHostname= "$InlineScriptNetworkManager && $InlineScriptHostname"
 
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYum"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'centos7' {
@@ -77,7 +75,7 @@ function New-JsonTemplate
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
             $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-2003.iso"
             $Json.variables.iso_checksum="659691c28a0e672558b003d223f83938f254b39875ee7559d1a4a14c79173193"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYum"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'oraclelinux' {
@@ -85,7 +83,7 @@ function New-JsonTemplate
             $Json.variables.floppy_files="kickstart/oraclelinux7/ks.cfg"
             $Json.variables.iso_url="put_files_here/V995537-01.iso"
             $Json.variables.iso_checksum="6E1069FF42F7E59B19AF4E2FCACAE2FCA3F195C7F2904275B0DF386EFDCD616D"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptProxy && $InlineScriptYum"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'perconamysql' {
@@ -108,7 +106,6 @@ function New-JsonTemplate
 
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptPercona"
-            $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsPercona
             $Json.provisioners[3] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
         }
@@ -182,11 +179,10 @@ function New-JsonTemplate
         default {        
         }  
     }
-
-    $VmId= "$machineImage-$env:id_machine_image"
             
-    $Json.variables.Hostname="${VmId}"
+    $Json.variables.Hostname="${env:vm_name}"
     $Json.variables.ssh_password="${env:rootpw}"
+    $Json.variables.tzoneinfo="${env:tzoneinfo}"
 
     if ([string]::IsNullOrEmpty($env:http_proxy))
     {
@@ -202,30 +198,26 @@ function New-JsonTemplate
         $Json.variables.dnsuffix="${env:USERDNSDOMAIN}" 
     }
 
-    $Json.builders[0].output_directory="output-$VmId"
+    $Json.builders[0].output_directory="${env:vm_directory}"
 
     $TempFile = New-TemporaryFile
     $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
 
-    $env:GeneratedTemplate=$machineImage
+    $env:GeneratedTemplate=$Template
     return $TempFile
 }
 
 
 function Show-proxyMenu
 {
-    param (
-        [string]$Title = 'Px Proxy'
-    )
 
-    Write-Host "================ $Title ================"
     if ([string]::IsNullOrEmpty($env:http_proxy))
     {
         $ProxyDefault = "No Proxy (Direct)"
     } else {
         $ProxyDefault = "System Proxy:$env:http_proxy"
     }
-    Write-Host " [P] Configure Px Proxy [Current $ProxyDefault]"
+    Write-Host " [15] Configure Px Proxy [$ProxyDefault]"
 
 }
 
@@ -237,73 +229,37 @@ param (
 
     Write-Host "================ $Title ================"
     
-    Write-Host " [1] CentOS 6"
-    Write-Host " [2] CentOS 7"
-    Write-Host " [3] Oracle Linux 7"
-    Write-Host " [4] Tuleap"
-    Write-Host " [5] Tuleap LDAP"
-    Write-Host " [6] Oracle Database 19c"
-    Write-Host " [7] Percona Server for MySQL"
+    Write-Host " [1] CentOS (6, 7)"
+    Write-Host " [2] Oracle Linux 7"
+    Write-Host " [3] Tuleap (With LDAP)"
+    Write-Host " [4] Database (Oracle 19c, Percona MySQL)"
 }
 
-Function Show-rootpwMenu {
-    param (
-    [string]$Title= "VM SSH Root Password:" 
-)     
-            Write-Host "====== $Title [$env:rootpw] ======="
-            Write-Host " [8] Enter root password ?"
-            Write-Host " [9] Generate password ?"
-    }
 
-    Function Show-directoryMenu {
+    Function Show-vmSettingsMenu {
         param (
-        [string]$Title= "Output Directory:"
+        [string]$Title= "Virtual Machine Settings"
     )
 
-                 if ([string]::IsNullOrEmpty($env:id_machine_image)) {
-                    $env:id_machine_image = "vmware-iso"
-                } 
-
-                Write-Host "========================= $Title [ output-<VMNAME>-$env:id_machine_image ] ======================="
-
-                Write-Host " [10] Enter output id ?"
-                Write-Host " [11] Generate: ?" 
+                Write-Host "========================= $Title ======================="
+                Write-Host " [10] Change Time Zone [$env:tzoneinfo]"
+                Write-Host " [11] Change SSH Root Password [$env:rootpw]"
+                Write-Host " [12] Change Virtual Machine Name [$env:vm_name] "
+                Write-Host " [13] Change Virtual Machine Directory [$env:vm_directory]"
+                Write-Host " [14] Configure Yum Update (ALL PACKAGES, ONLY SECURITY, NO UPDATES)"
+                Show-proxyMenu 
         }
 
-        function Show-oracleSidMenu
+        function Show-oracleParametersMenu
         {
             param (
-                [string]$Title = 'Oracle Database Configuration:'
+                [string]$Title = 'Oracle Database Parameters'
             )
         
             Write-Host "================ $Title ================"
         
-            Write-Host " [12] Configure Global database name (SID=$env:oracle_db_name)"
-            Write-Host " [13] Configure Character set of the database ($env:oracle_db_characterSet)"
-        
-        }
-
-        function Show-oracleLinuxUpdates
-        {
-            param (
-                [string]$Title = 'Linux Updates'
-            )
-        
-            Write-Host "================ $Title ================"
-        
-            Write-Host " [15] Configure Yum Update (ALL PACKAGES, ONLY SECURITY, NO UPDATES) "
-        
-        }
-
-        function Show-zoneinfoMenu
-        {
-            param (
-                [string]$Title = "Time Zone (TZ):"
-            )
-        
-            Write-Host "================ $Title [$env:zoneinfo] ================"
-        
-            Write-Host " [14] Configure zoneinfo TZ"
+            Write-Host " [20] Configure SID: $env:oracle_db_name"
+            Write-Host " [21] Configure NLS: $env:oracle_db_characterSet"
         
         }
 
@@ -320,7 +276,7 @@ Function Show-rootpwMenu {
 
 Function BuildPacker {
     $env:PACKER_LOG=1
-    $env:PACKER_LOG_PATH="packer_templates/packerlog_${env:GeneratedTemplate}.txt"
+    $env:PACKER_LOG_PATH="packerlog_${env:vm_name}_$env:vm_directory.txt"
     invoke-expression  "cmd /c start packer build packer_templates\${env:GeneratedTemplate}.json"
 }
 
@@ -338,19 +294,11 @@ Clear-Host
 
 Show-buildMenu
 
-Show-proxyMenu
-
 Show-packerMenu
 
-Show-rootpwMenu
+Show-vmSettingsMenu
 
-Show-directoryMenu
-
-Show-oraclesidMenu
-
-Show-zoneinfoMenu
-
-Show-oracleLinuxUpdates
+Show-oracleParametersMenu
 
 Write-Host "`n"
 $selection = (Read-Host '  Choose a menu option, or press 0 to Exit').ToUpper()
@@ -361,73 +309,84 @@ switch ($selection)
        Clear-JsonTemplate
        break
     }
-    'P' {
-        if (Add-PXCredential) {Start-Px(Test-Px)}
-    }
     '1' {
-        $JsonTemplate=New-JsonTemplate "centos6"
-        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-        $env:GeneratedTemplateMenu = "[CentOS 6]"
+        $x = (Read-Host -Prompt "CentOS (6, Default = 7) ?").ToUpper()
+        switch ($x) {
+            { '6' -contains $_ } { $JsonTemplate=New-JsonTemplate "centos6"
+                        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+                        $env:GeneratedTemplateMenu = "[CentOS 6]" }
+            Default {
+                $JsonTemplate=New-JsonTemplate "centos7"
+                Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+                $env:GeneratedTemplateMenu = "[CentOS 7]"
+            }
+        }
     }
     '2' {
-        $JsonTemplate=New-JsonTemplate "centos7"
-        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-        $env:GeneratedTemplateMenu = "[CentOS 7]"
+        $x = (Read-Host -Prompt "Oracle LINUX (Default = 7) ?").ToUpper()
+        switch ($x) {
+            Default {
+                $JsonTemplate=New-JsonTemplate "oraclelinux"
+                Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+                $env:GeneratedTemplateMenu = "[Oracle Linux 7]"
+            }
+        }
     }
     '3' {
-        $JsonTemplate=New-JsonTemplate "oraclelinux"
-        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-        $env:GeneratedTemplateMenu = "[Oracle Linux 7]"
+        $x = (Read-Host -Prompt "TULEAP (LDAP, Default = TULEAP) ?").ToUpper()
+        switch ($x) {
+            { 'ldap' -contains $_ } { $JsonTemplate=New-JsonTemplate "tuleapldap"
+                                      Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+                                      $env:GeneratedTemplateMenu = "[Tuleap LDAP]" }
+            Default {
+                $JsonTemplate=New-JsonTemplate "tuleap"
+                Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+                $env:GeneratedTemplateMenu = "[Tuleap]"
+            }
+        }
     } 
     '4' {
-        $JsonTemplate=New-JsonTemplate "tuleap"
-        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-        $env:GeneratedTemplateMenu = "[Tuleap]"
+        $x = (Read-Host -Prompt "DATABASE (Percona, Default = 19c) ?").ToUpper()
+        switch ($x) {
+            { 'percona' -contains $_ } {$JsonTemplate=New-JsonTemplate "perconamysql"
+                                        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+                                        $env:GeneratedTemplateMenu = "[Percona Server for MySQL]" }
+            Default {
+                $JsonTemplate=New-JsonTemplate "oracledatabase"
+                Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
+                $env:GeneratedTemplateMenu = "[Oracle Database 19c]" 
+            }
     }
-    '5' {
-        $JsonTemplate=New-JsonTemplate "tuleapldap"
-        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-        $env:GeneratedTemplateMenu = "[Tuleap LDAP]"
-    }
-    '6' {
-        $JsonTemplate=New-JsonTemplate "oracledatabase"
-        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-        $env:GeneratedTemplateMenu = "[Oracle Database 19c]" 
-    }
-    '7' {
-        $JsonTemplate=New-JsonTemplate "perconamysql"
-        Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-        $env:GeneratedTemplateMenu = "[Percona Server for MySQL]"
-    }
-    '8' {
-        $env:rootpw= Read-Host -Prompt "Enter root password ?"
-        Clear-JsonTemplate
-    }
-    '9' {
-        $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})
-        Clear-JsonTemplate
     }
     '10' {
-        $env:id_machine_image = Read-Host -Prompt "Enter Output ID: "
+        $env:tzoneinfo = Read-Host -Prompt "Enter Time Zone ?"
         Clear-JsonTemplate
-    } 
+    }
     '11' {
-        $env:id_machine_image = -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
+        $x = (Read-Host -Prompt "root password ([G]enerate, Default = Tape) ?").ToUpper()
+        switch ($x) {
+            { 'generate', 'g'  -contains $_ } { $env:rootpw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_})  }
+            Default {$env:rootpw= Read-Host -Prompt "Enter root password ?"}
+        }
         Clear-JsonTemplate
     }
     '12' {
-        $env:oracle_db_name = (Read-Host -Prompt "Enter ORACLE SID Name: ").ToUpper()
+        $x = (Read-Host -Prompt "Virtual Machine Name ([G]enerate, Default = Tape) ?").ToUpper()
+        switch ($x) {
+            { 'generate', 'g'  -contains $_ } { $env:vm_name= -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_}) }
+            Default {$env:vm_name = Read-Host -Prompt "Enter VM Name: "}
+        }
         Clear-JsonTemplate
-    }
+    } 
     '13' {
-        $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet ?"
+        $x = (Read-Host -Prompt "Virtual Machine Directory ([G]enerate, Default = Tape) ?").ToUpper()
+        switch ($x) {
+            { 'generate', 'g'  -contains $_ } { $env:vm_directory = "output-" + -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_}) }
+            Default {$env:vm_directory = Read-Host -Prompt "Enter VM Directory: "}
+        }
         Clear-JsonTemplate
     }
     '14' {
-        $env:zoneinfo = Read-Host -Prompt "Enter Time Zone ?"
-        Clear-JsonTemplate
-    }
-    '15' {
         $env:yumupdate = (Read-Host -Prompt "Do you want to install the updates? ([N]o, [S]ecurity, Default = Yes) ?").ToUpper()
         switch ($env:yumupdate) {
             { 'no', 'n'  -contains $_ } { $env:yumupdate="/tmp/linux/yumUpdateLess.sh"
@@ -437,6 +396,17 @@ switch ($selection)
             Default { $env:yumupdate="/tmp/linux/yumUpgrade.sh" 
             $env:yumupdatemenu="[ALL PACKAGES]"}
         }
+        Clear-JsonTemplate
+    }
+    '15' {
+        if (Add-PXCredential) {Start-Px(Test-Px)}
+    }
+    '20' {
+        $env:oracle_db_name = (Read-Host -Prompt "Enter ORACLE SID Name: ").ToUpper()
+        Clear-JsonTemplate
+    }
+    '21' {
+        $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet ?"
         Clear-JsonTemplate
     }
     'B' {
@@ -455,10 +425,10 @@ switch ($selection)
 until ( $selection -eq '0')
 }
 
+$env:tzoneinfo="UTC"
 $env:rootpw="server"
 $env:oracle_db_name="NONCDB"
 $env:oracle_db_characterSet="AL32UTF8"
-$env:zoneinfo="UTC"
 Clear-JsonTemplate
 $env:yumupdate="/tmp/linux/yumUpgrade.sh"
 $env:yumupdatemenu="[ALL PACKAGES]"
