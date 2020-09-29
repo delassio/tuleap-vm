@@ -221,7 +221,7 @@ function Show-proxyMenu
 
 }
 
-function Show-packerMenu
+function Show-TemplateMenu
 {
 param (
     [string]$Title = 'Generate VM Templates'
@@ -231,7 +231,7 @@ param (
     
     Write-Host " [1] CentOS (6, 7)"
     Write-Host " [2] Oracle Linux 7"
-    Write-Host " [3] Tuleap (With LDAP)"
+    Write-Host " [3] Tuleap (LDAP Options)"
     Write-Host " [4] Database (Oracle 19c, Percona MySQL)"
 }
 
@@ -246,7 +246,7 @@ param (
                 Write-Host " [11] Change SSH Root Password [$env:rootpw]"
                 Write-Host " [12] Change Virtual Machine Name [$env:vm_name] "
                 Write-Host " [13] Change Virtual Machine Directory [$env:vm_directory]"
-                Write-Host " [14] Configure Yum Update (ALL PACKAGES, ONLY SECURITY, NO UPDATES)"
+                Write-Host " [14] Configure Yum Update (ALL PACKAGES, ONLY SECURITY, NO UPDATES)" -NoNewline; Write-Host  $env:yumupdatemenu -ForegroundColor Green
                 Show-proxyMenu 
         }
 
@@ -270,7 +270,7 @@ param (
             )
             
             Write-Host "================ $Title ================"
-            Write-Host " [B] Build Image ${env:GeneratedTemplateMenu} ${env:yumupdatemenu}"
+            Write-Host " ${env:GeneratedTemplateMenu} "
             Write-Host "`n"
         }
 
@@ -283,7 +283,7 @@ Function BuildPacker {
 Function Clear-JsonTemplate {
     Get-ChildItem packer_templates -Recurse -Include *.json -Exclude Template.json | Remove-Item -Recurse -Force
     $env:GeneratedTemplate = ""
-    $env:GeneratedTemplateMenu = "Empty"
+    $env:GeneratedTemplateMenu = "Generate Templates (CentOS, OL7, Tuleap, Database) ?"
 }
 
 function Build-MachineImage
@@ -294,7 +294,7 @@ Clear-Host
 
 Show-buildMenu
 
-Show-packerMenu
+Show-TemplateMenu
 
 Show-vmSettingsMenu
 
@@ -314,11 +314,11 @@ switch ($selection)
         switch ($x) {
             { '6' -contains $_ } { $JsonTemplate=New-JsonTemplate "centos6"
                         Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-                        $env:GeneratedTemplateMenu = "[CentOS 6]" }
+                        $env:GeneratedTemplateMenu = "[B] Build Image CentOS 6" }
             Default {
                 $JsonTemplate=New-JsonTemplate "centos7"
                 Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-                $env:GeneratedTemplateMenu = "[CentOS 7]"
+                $env:GeneratedTemplateMenu = "[B] Build Image CentOS 7"
             }
         }
     }
@@ -328,7 +328,7 @@ switch ($selection)
             Default {
                 $JsonTemplate=New-JsonTemplate "oraclelinux"
                 Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-                $env:GeneratedTemplateMenu = "[Oracle Linux 7]"
+                $env:GeneratedTemplateMenu = "[B] Build Image Oracle Linux 7"
             }
         }
     }
@@ -337,11 +337,11 @@ switch ($selection)
         switch ($x) {
             { 'ldap' -contains $_ } { $JsonTemplate=New-JsonTemplate "tuleapldap"
                                       Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-                                      $env:GeneratedTemplateMenu = "[Tuleap LDAP]" }
+                                      $env:GeneratedTemplateMenu = "[B] Build Image Tuleap LDAP" }
             Default {
                 $JsonTemplate=New-JsonTemplate "tuleap"
                 Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-                $env:GeneratedTemplateMenu = "[Tuleap]"
+                $env:GeneratedTemplateMenu = "[B] Build Image Tuleap"
             }
         }
     } 
@@ -350,11 +350,11 @@ switch ($selection)
         switch ($x) {
             { 'percona' -contains $_ } {$JsonTemplate=New-JsonTemplate "perconamysql"
                                         Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-                                        $env:GeneratedTemplateMenu = "[Percona Server for MySQL]" }
+                                        $env:GeneratedTemplateMenu = "Percona Server for MySQL" }
             Default {
                 $JsonTemplate=New-JsonTemplate "oracledatabase"
                 Move-Item $JsonTemplate packer_templates\"${env:GeneratedTemplate}.json" -Force
-                $env:GeneratedTemplateMenu = "[Oracle Database 19c]" 
+                $env:GeneratedTemplateMenu = "[B] Build Image Oracle Database 19c" 
             }
     }
     }
@@ -406,15 +406,15 @@ switch ($selection)
         Clear-JsonTemplate
     }
     '21' {
-        $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet ?"
+        $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet: "
         Clear-JsonTemplate
     }
     'B' {
         if ([string]::IsNullOrEmpty($env:GeneratedTemplate))
         {
             Clear-Host
-            Write-Host " Please Generate Template File:"
-            Show-packerMenu
+            Write-Host " Please Generate Template File !!!"
+            Show-TemplateMenu
             Pause
         } else {
             BuildPacker
