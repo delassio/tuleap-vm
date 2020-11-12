@@ -19,7 +19,7 @@
 
 ### Packer ###
 packer_cache/
-packerlog.txt
+packerlog*.txt
 output-*/
 
 # For built boxes

@@ -16,7 +16,7 @@
       "boot_command": [
         "<up><tab> inst.text rootpw={{ user `ssh_password` }} inst.ks=hd:fd0:/ks.cfg <enter><wait>"
       ],
-      "cpus": "2",
+      "cpus": "1",
       "floppy_files": [
         "{{ user `floppy_files` }}"
       ],
@@ -26,7 +26,7 @@
       "memory": "1024",
       "shutdown_command": "shutdown -P now",
       "ssh_password": "{{ user `ssh_password` }}",
-      "ssh_timeout": "10m",
+      "ssh_timeout": "15m",
       "ssh_username": "{{ user `ssh_username` }}",
       "type": "vmware-iso",
       "vm_name": "{{ user `hostname` }}"

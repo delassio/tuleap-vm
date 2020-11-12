@@ -81,8 +81,10 @@ function New-JsonTemplate
         'oraclelinux' {
             $Json.variables.guest_os_type="oraclelinux7-64"
             $Json.variables.floppy_files="kickstart/oraclelinux7/ks.cfg"
-            $Json.variables.iso_url="put_files_here/V995537-01.iso"
-            $Json.variables.iso_checksum="6E1069FF42F7E59B19AF4E2FCACAE2FCA3F195C7F2904275B0DF386EFDCD616D"
+            $Json.variables.iso_url="put_files_here/OracleLinux-R7-U9-Server-x86_64-dvd.iso"
+            $Json.variables.iso_checksum="dc2782bfd92b4c060cf8006fbc6e18036c27f599eebf3584a1a2ac54f008bf2f"
+            $Json.builders[0].cpus="2"
+            $Json.builders[0].memory="2048"
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
@@ -229,8 +231,8 @@ param (
 
     Write-Host "================ $Title ================"
     
-    Write-Host " [1] CentOS (6, 7)"
-    Write-Host " [2] Oracle Linux 7"
+    Write-Host " [1] CentOS 6.10, 7 (2009)"
+    Write-Host " [2] Oracle Linux 7.9"
     Write-Host " [3] Tuleap (LDAP Options)"
     Write-Host " [4] Database (Oracle 19c, Percona MySQL)"
 }
