@@ -73,8 +73,8 @@ function New-JsonTemplate
         'centos7' {
             $Json.variables.guest_os_type="centos7-64"
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
-            $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-2003.iso"
-            $Json.variables.iso_checksum="659691c28a0e672558b003d223f83938f254b39875ee7559d1a4a14c79173193"
+            $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-2009.iso"
+            $Json.variables.iso_checksum="07b94e6b1a0b0260b94c83d6bb76b26bf7a310dc78d7a9c7432809fb9bc6194a"
             $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
