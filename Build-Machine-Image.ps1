@@ -38,7 +38,7 @@ function New-JsonTemplate
             $InlineScriptTimezone="/tmp/linux/setTimezone.sh"
             $InlineScriptYum=$env:yumupdate            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
-            $InlineScriptTuleapLdap="/tmp/tuleap/ldapPlugin.sh"
+            $InlineScriptTuleapLdap="/tmp/tuleap/ldap/ldapPlugin.sh"
             $InlineScriptOracleInstall="/tmp/oracledatabase/scripts/install.sh"
             $InlineScriptOracleImport="/home/oracle/dump/import.sh"
             $InlineScriptPercona="/tmp/percona/scripts/install.sh"
@@ -147,7 +147,7 @@ function New-JsonTemplate
 
         } 
         'tuleap' {
-            $TemplateJsonFile = New-JsonTemplate "centos"
+            $TemplateJsonFile = New-JsonTemplate "centos7"
             $Json = Get-Content $TemplateJsonFile | Out-String  | ConvertFrom-Json
             Remove-Item $TemplateJsonFile
 

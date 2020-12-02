@@ -40,7 +40,7 @@ su -l codendiadm -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tule
 echo  "TULEAP: Enable ldap plugin from php-launcher as codendiadm" &&
 if [[ -d '/etc/tuleap/plugins/ldap/' ]]
 then
-jq -r '. | to_entries | .[] | .key + "=\"" + .value + "\""' /tmp/ldap.json > /tmp/ldap && source /tmp/ldap
+jq -r '. | to_entries | .[] | .key + "=\"" + .value + "\""' /tmp/tuleap/ldap/ldap.json > /tmp/tuleap/ldap && source /tmp/tuleap/ldap
 sed -i "s/_auth_type = 'codendi'/_auth_type = 'ldap'/" /etc/tuleap/conf/local.inc
 case "$ldap_type" in
 ActiveDirectory ) customize_ldap_activedirectory
@@ -49,7 +49,7 @@ OpenLDAP ) customize_ldap_openldap
 ;;
 esac
 echo  "TULEAP: "\$sys_auth_type" variable in /etc/tuleap/conf/local.inc changed from codendi to ldap"
-echo  "TULEAP: $ldap_type Ldap Plugin Configured :)"
+echo  "TULEAP: $ldap_type Ldap Plugin Configured for domain $ldap_dn :)"
 else
 echo  "TULEAP: $ldap_type Ldap Plugin not Configured :("
 fi
@@ -64,18 +64,18 @@ function install_ldap {
                 echo tuleap-plugin-ldap RPM already installed
           else
                 yum install -y tuleap-plugin-ldap && \
-                /usr/share/tuleap/tools/utils/php72/run.php --module=nginx && \
+                /usr/share/tuleap/tools/utils/php73/run.php --module=nginx && \
                 systemctl reload nginx
           fi       
 }
 
 
 function check_ldap {
-        ldap_type=$(jq -r ".ldap_type" < "/tmp/ldap.json")
+        ldap_type=$(jq -r ".ldap_type" < "/tmp/tuleap/ldap/ldap.json")
         if [[ ("$ldap_type" == "ActiveDirectory") || ("$ldap_type" == "OpenLDAP") ]]
         then
                 echo  "TULEAP: $ldap_type LDAP plugin selected" && \
-                jq -r '. | to_entries | .[] | .key + "=\"" + .value + "\""' /tmp/ldap.json > /tmp/ldap && \
+                jq -r '. | to_entries | .[] | .key + "=\"" + .value + "\""' /tmp/tuleap/ldap/ldap.json > /tmp/ldap && \
                 source /tmp/ldap && \
                 install_ldap && \
                 enable_ldap
@@ -87,10 +87,10 @@ function check_ldap {
 
 function load_json {
 
-if [[ -z `jq -r '.ldap_type' /tmp/ldap.json` ]]
+if [[ -z `jq -r '.ldap_type' /tmp/tuleap/ldap/ldap.json` ]]
 
 then
-        echo  "TULEAP: ldap_type empty, Please set a value /tmp/ldap.json file"
+        echo  "TULEAP: ldap_type empty, Please set a value /tmp/tuleap/ldap/ldap.json file"
         echo  "TULEAP: LDAP plugin not configured"
 else    
         check_ldap 
@@ -100,7 +100,7 @@ fi
 
 function check_json {
 
-if [[ -f '/tmp/ldap.json' ]]
+if [[ -f '/tmp/tuleap/ldap/ldap.json' ]]
 then 
 load_json
 else
