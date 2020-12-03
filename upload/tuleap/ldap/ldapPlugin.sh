@@ -40,7 +40,7 @@ su -l codendiadm -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tule
 echo  "TULEAP: Enable ldap plugin from php-launcher as codendiadm" &&
 if [[ -d '/etc/tuleap/plugins/ldap/' ]]
 then
-jq -r '. | to_entries | .[] | .key + "=\"" + .value + "\""' /tmp/tuleap/ldap/ldap.json > /tmp/tuleap/ldap && source /tmp/tuleap/ldap
+jq -r '. | to_entries | .[] | .key + "=\"" + .value + "\""' /tmp/tuleap/ldap/ldap.json > /tmp/tuleap/ldap/ldapjson && source /tmp/tuleap/ldap/ldapjson
 sed -i "s/_auth_type = 'codendi'/_auth_type = 'ldap'/" /etc/tuleap/conf/local.inc
 case "$ldap_type" in
 ActiveDirectory ) customize_ldap_activedirectory
@@ -75,8 +75,7 @@ function check_ldap {
         if [[ ("$ldap_type" == "ActiveDirectory") || ("$ldap_type" == "OpenLDAP") ]]
         then
                 echo  "TULEAP: $ldap_type LDAP plugin selected" && \
-                jq -r '. | to_entries | .[] | .key + "=\"" + .value + "\""' /tmp/tuleap/ldap/ldap.json > /tmp/ldap && \
-                source /tmp/ldap && \
+                jq -r '. | to_entries | .[] | .key + "=\"" + .value + "\""' /tmp/tuleap/ldap/ldap.json > /tmp/tuleap/ldap/ldapjson && source /tmp/tuleap/ldap/ldapjson
                 install_ldap && \
                 enable_ldap
         else
