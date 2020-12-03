@@ -6,7 +6,6 @@
 ### Tuleap ###
 .*_passwd
 .*_rootpw
-upload/tuleap/ldap/*.json
 
 ### Clean ###
 

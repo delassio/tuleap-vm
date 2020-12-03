@@ -101,10 +101,11 @@ fi
 function check_json {
 
 if [[ -f '/tmp/tuleap/ldap/ldap.json' ]]
-then 
+then
+echo "Loading Custom LDAP Properties"  
 load_json
 else
-echo "Please copy ldap.json file into tmp directory" 
+echo "Please copy ldap.json file into tmp directory to configure Ldap properly" 
 fi 
 
 }
