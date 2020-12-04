@@ -34,7 +34,7 @@ function New-JsonTemplate
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh" 
             $InlineScriptNetworkManager="/tmp/linux/yumNetworkManager.sh"  
             $InlineScriptProxy="/tmp/linux/yumUpdateConfig.sh"
-            $InlineScriptHostname="/tmp/linux/setHostname.sh"
+            $InlineScriptDns="/tmp/linux/setIpAddressHostname.sh"
             $InlineScriptTimezone="/tmp/linux/setTimezone.sh"
             $InlineScriptYum=$env:yumupdate            
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
@@ -65,9 +65,9 @@ function New-JsonTemplate
 
             $Json.builders[0].boot_command='["<tab> text ks=hd:fd0:/ks.cfg <enter><wait>"]'
 
-            $InlineScriptHostname= "$InlineScriptNetworkManager && $InlineScriptHostname"
+            $InlineScriptDns= "$InlineScriptNetworkManager && $InlineScriptDns"
 
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptDns && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'centos7' {
@@ -75,7 +75,7 @@ function New-JsonTemplate
             $Json.variables.floppy_files="kickstart/centos7/ks.cfg"
             $Json.variables.iso_url="put_files_here/CentOS-7-x86_64-Minimal-2009.iso"
             $Json.variables.iso_checksum="07b94e6b1a0b0260b94c83d6bb76b26bf7a310dc78d7a9c7432809fb9bc6194a"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptDns && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'oraclelinux' {
@@ -85,7 +85,7 @@ function New-JsonTemplate
             $Json.variables.iso_checksum="dc2782bfd92b4c060cf8006fbc6e18036c27f599eebf3584a1a2ac54f008bf2f"
             $Json.builders[0].cpus="2"
             $Json.builders[0].memory="2048"
-            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptHostname && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
+            $Json.provisioners[1].inline = "$InlineScriptPermission && $InlineScriptEnvVars && $InlineScriptDns && $InlineScriptTimezone && $InlineScriptProxy && $InlineScriptYum"
             $Json.provisioners[1] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
         }
         'perconamysql' {

@@ -51,16 +51,8 @@ esac
 echo  "TULEAP: "\$sys_auth_type" variable in /etc/tuleap/conf/local.inc changed from codendi to ldap"
 
 jq -r ".ldap_dn" < "/tmp/tuleap/ldap/ldap.json" > /tmp/tuleap/ldap/ldapdomain
-
-sed -i -- 's/dc=/./g' /tmp/tuleap/ldap/ldapdomain
-
-sed -i -- $'s/,//g' /tmp/tuleap/ldap/ldapdomain
-
-sed -i -- 's/.//1' /tmp/tuleap/ldap/ldapdomain
-
-ldap_domain=`cat /tmp/tuleap/ldap/ldapdomain`
-
-echo  "TULEAP: LDAP $ldap_type Plugin Configured for domain: $ldap_domain"
+sed -i -e 's/\(.*\)/\L\1/' -e 's/dc=/./g' -e 's/,//g' -e 's/.//1' /tmp/tuleap/ldap/ldapdomain
+echo  "TULEAP: LDAP $ldap_type Plugin Configured for domain: `cat /tmp/tuleap/ldap/ldapdomain`"
 
 else
 echo  "TULEAP: $ldap_type Ldap Plugin not Configured :("
