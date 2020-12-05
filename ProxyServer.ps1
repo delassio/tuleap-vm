@@ -46,10 +46,12 @@ else    {
 Function Start-Px ($CHECK) {
     Clear-Host
     if ($CHECK){
+        
     Write-Host "Starting Px Server $env:px_server"    
-    $IF=$(Get-DnsClient -ConnectionSpecificSuffix $env:USERDNSDOMAIN).InterfaceIndex
+    
+    $IF=$(Get-NetRoute | ? DestinationPrefix -eq '0.0.0.0/0' | Get-NetIPInterface | Where ConnectionState -eq 'Connected').ifIndex
 
-    $env:px_listen=$(Get-NetIPAddress -InterfaceIndex $IF -AddressFamily IPv4).IPAddress[0]
+    $env:px_listen=$(Get-NetIPAddress -InterfaceIndex $IF -AddressFamily IPv4).IPAddress
 
     $env:http_proxy='http://'+$env:px_listen+':3128'
 
