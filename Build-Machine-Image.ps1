@@ -215,11 +215,12 @@ function Show-proxyMenu
 
     if ([string]::IsNullOrEmpty($env:http_proxy))
     {
-        $ProxyDefault = "No Proxy (Direct)"
+        $ProxyDetected = "No Proxy (Direct)"
     } else {
-        $ProxyDefault = "System Proxy:$env:http_proxy"
+        $system_proxy = "$env:http_proxy"
+        $ProxyDetected = "$system_proxy"
     }
-    Write-Host " [15] Configure Px Proxy [$ProxyDefault]"
+    Write-Host " [15] Configure Proxy (Px, Manual) [$ProxyDetected]"
 
 }
 
@@ -401,7 +402,14 @@ switch ($selection)
         Clear-JsonTemplate
     }
     '15' {
-        if (Add-PXCredential) {Start-Px(Test-Px)}
+        $x = (Read-Host -Prompt "Proxy Settings (P[x], Default = Manual) ?").ToUpper()
+        switch ($x) {
+            { 'x' -contains $_ } { if (Add-PXCredential) {Start-Px(Test-Px)} }
+            Default {
+                $manual_proxy= Read-Host -Prompt "Manual Proxy <IP:port>, <hostname:port> ?"
+                $env:http_proxy='http://'+$manual_proxy
+            }
+        }
     }
     '20' {
         $env:oracle_db_name = (Read-Host -Prompt "Enter ORACLE SID Name: ").ToUpper()
