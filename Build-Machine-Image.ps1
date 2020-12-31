@@ -4,7 +4,7 @@
 #
 $ScriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 try {
-    . ("$ScriptDirectory\ProxyServer.ps1")
+    . ("$ScriptDirectory\Px.ps1")
 }
 catch {
     Write-Host "Error while loading supporting PowerShell Scripts" 
@@ -27,8 +27,6 @@ function New-JsonTemplate
     param (
         [string]$Template
     )
-
-            # Clear-JsonTemplate
 
             $InlineScriptPermission="find /tmp -type f -iname '*.sh' -exec chmod +x {} \;"
             $InlineScriptEnvVars="/tmp/linux/setEnvironmentVariables.sh" 
@@ -186,11 +184,11 @@ function New-JsonTemplate
     $Json.variables.ssh_password="${env:rootpw}"
     $Json.variables.tzoneinfo="${env:tzoneinfo}"
 
-    if ([string]::IsNullOrEmpty($env:http_proxy))
+    if ([string]::IsNullOrEmpty($env:noproxy) -and ($env:ProxyDetected -eq "No Proxy (Direct)") )
     {
         $Json.variables.proxy=""
     } else {
-        $Json.variables.proxy="${env:http_proxy}" 
+        $Json.variables.proxy="${env:ProxyDetected}"
     }
 
     if ([string]::IsNullOrEmpty($env:USERDNSDOMAIN))
@@ -209,20 +207,6 @@ function New-JsonTemplate
     return $TempFile
 }
 
-
-function Show-proxyMenu
-{
-
-    if ([string]::IsNullOrEmpty($env:http_proxy))
-    {
-        $ProxyDetected = "No Proxy (Direct)"
-    } else {
-        $system_proxy = "$env:http_proxy"
-        $ProxyDetected = "$system_proxy"
-    }
-    Write-Host " [15] Configure Proxy (Px, Manual) [$ProxyDetected]"
-
-}
 
 function Show-TemplateMenu
 {
@@ -402,15 +386,36 @@ switch ($selection)
         Clear-JsonTemplate
     }
     '15' {
-        $x = (Read-Host -Prompt "Proxy Settings (P[x], Default = Manual) ?").ToUpper()
+        $x = (Read-Host -Prompt "Proxy Settings ([N]o Proxy,[S]ystem settings ,[M]anual, Default = Px NTLM) ?").ToUpper()
         switch ($x) {
-            { 'x' -contains $_ } { if (Add-PXCredential) {Start-Px(Test-Px)} }
-            Default {
-                $manual_proxy= Read-Host -Prompt "Manual Proxy <IP:port>, <hostname:port> ?"
-                $env:http_proxy='http://'+$manual_proxy
+            { 'n' -contains $_ } {
+                    $env:noproxy=$null
+                    $env:ProxyDetected = "No Proxy (Direct)"
+            } 
+
+            { 'system', 's' -contains $_ } {
+                
+                if ([string]::IsNullOrEmpty($env:http_proxy) )
+                {
+                    $env:noproxy=$null
+                    $env:ProxyDetected = "No Proxy (Direct)"
+                } else {
+                    $env:ProxyDetected= $env:http_proxy
+                }
+                
+            }         
+            
+            { 'm' -contains $_ }  {
+                $ProxyManual= Read-Host -Prompt "Manual Proxy <IP:port>, <hostname:port> ?"
+                $env:ProxyDetected='http://'+$ProxyManual
             }
+
+            Default { if (Add-PXCredential) {Start-Px(Find-Px)} }
         }
     }
+
+
+
     '20' {
         $env:oracle_db_name = (Read-Host -Prompt "Enter ORACLE SID Name: ").ToUpper()
         Clear-JsonTemplate
@@ -435,6 +440,18 @@ switch ($selection)
 until ( $selection -eq '0')
 }
 
+function Show-proxyMenu
+{
+
+    if ([string]::IsNullOrEmpty($env:ProxyDetected))
+    {
+        $env:noproxy=$null
+        $env:ProxyDetected = "No Proxy (Direct)"
+    } 
+    Write-Host " [15] Configure Proxy (Manual, Px NTLM) [$env:ProxyDetected]"
+
+}
+
 $env:tzoneinfo="UTC"
 $env:rootpw="server"
 $env:oracle_db_name="NONCDB"
@@ -442,6 +459,7 @@ $env:oracle_db_characterSet="AL32UTF8"
 Clear-JsonTemplate
 $env:yumupdate="/tmp/linux/yumUpgrade.sh"
 $env:yumupdatemenu="[ALL PACKAGES]"
+$env:ProxyDetected=""
 Build-MachineImage
 Pause
 Clear-Host

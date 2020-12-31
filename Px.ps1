@@ -23,9 +23,26 @@ Function Connect-Px($SERVER) {
 }
 
 
-Function Test-Px {    
-do
+Function Find-Px {
+
+    do
     {
+
+
+    if (Test-Path -path px/px.exe) {
+                Test-Px              } 
+    else    {
+                Write-Host "Please download and copy  Px for Windows into px directory"
+                Pause
+            }
+
+        } while (-not (Connect-Px($env:px_server)))
+        return $True
+}
+
+
+Function Test-Px {    
+
         if($env:http_proxy.Length -gt 0)
         {        
             $protocol, $server, $port= $env:http_proxy.split(":")
@@ -35,12 +52,9 @@ do
 else    {
             Clear-Host
             Write-Host "======== No SYSTEM PROXY SETTING detected ========"
-            $env:px_server= Read-Host -Prompt "Enter Enterprise Proxy <IP:port>, <hostname:port> ?"
+            $env:px_server= Read-Host -Prompt "Enter Proxy server(s) to connect through <IP:port>, <hostname:port> ?"
             Clear-Host        
         }
-                                                              
-    } while (-not (Connect-Px($env:px_server)))
-    return $True
 }
 
 Function Start-Px ($CHECK) {
@@ -53,11 +67,11 @@ Function Start-Px ($CHECK) {
 
     $env:px_listen=$(Get-NetIPAddress -InterfaceIndex $IF -AddressFamily IPv4).IPAddress
 
-    $env:http_proxy='http://'+$env:px_listen+':3128'
+    $env:ProxyDetected='http://'+$env:px_listen+':3128'
 
     Write-Host 'Enterprise Proxy'$env:px_server
 
-    Write-Host 'Px Proxy'$env:http_proxy
+    Write-Host 'Px Proxy'$env:ProxyDetected
 
     $env:px_username=$env:USERDOMAIN+'\'+$env:USERNAME
 
