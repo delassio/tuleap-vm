@@ -153,8 +153,12 @@ echo 'ORACLE INSTALLER: Done running user-defined post-setup scripts'
 
 echo "ORACLE PASSWORD FOR SYS AND SYSTEM: $ORACLE_PWD";
 
+
 sudo cp -rf /tmp/oracledatabase/dump /home/oracle
-sudo chmod a+rx /home/oracle/dump/import.sh
+
+if [ -e /home/oracle/dump/import.sh ]
+ then sudo chmod a+rx /home/oracle/dump/import.sh
+fi
 
 echo "ORACLE INSTALLER: dump import directory setup";
 

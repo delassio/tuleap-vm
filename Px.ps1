@@ -63,7 +63,7 @@ Function Start-Px ($CHECK) {
         
     Write-Host "Starting Px Server $env:px_server"    
     
-    $IF=$(Get-NetRoute | ? DestinationPrefix -eq '0.0.0.0/0' | Get-NetIPInterface | Where ConnectionState -eq 'Connected').ifIndex
+    $IF=$(Get-NetRoute | Where-Object DestinationPrefix -eq '0.0.0.0/0' | Get-NetIPInterface | Where-Object ConnectionState -eq 'Connected').ifIndex
 
     $env:px_listen=$(Get-NetIPAddress -InterfaceIndex $IF -AddressFamily IPv4).IPAddress
 

@@ -38,7 +38,7 @@ function New-JsonTemplate
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldap/ldapPlugin.sh"
             $InlineScriptOracleInstall="/tmp/oracledatabase/scripts/install.sh"
-            $InlineScriptOracleImport="/home/oracle/dump/import.sh"
+            $InlineScriptOracleImport="if [ -e /home/oracle/dump/import.sh  ]; then /home/oracle/dump/import.sh; fi"
             $InlineScriptPercona="/tmp/percona/scripts/install.sh"
 
             $EnvVarsOracle=@( "ORACLE_BASE=/opt/oracle",
@@ -184,7 +184,7 @@ function New-JsonTemplate
     $Json.variables.ssh_password="${env:rootpw}"
     $Json.variables.tzoneinfo="${env:tzoneinfo}"
 
-    if ([string]::IsNullOrEmpty($env:noproxy) -and ($env:ProxyDetected -eq "No Proxy (Direct)") )
+    if ([string]::IsNullOrEmpty($env:noproxy) -and ($env:ProxyDetected -eq $noproxymenu) )
     {
         $Json.variables.proxy=""
     } else {
@@ -390,7 +390,7 @@ switch ($selection)
         switch ($x) {
             { 'n' -contains $_ } {
                     $env:noproxy=$null
-                    $env:ProxyDetected = "No Proxy (Direct)"
+                    $env:ProxyDetected = $noproxymenu
             } 
 
             { 'system', 's' -contains $_ } {
@@ -398,7 +398,7 @@ switch ($selection)
                 if ([string]::IsNullOrEmpty($env:http_proxy) )
                 {
                     $env:noproxy=$null
-                    $env:ProxyDetected = "No Proxy (Direct)"
+                    $env:ProxyDetected = $noproxymenu
                 } else {
                     $env:ProxyDetected= $env:http_proxy
                 }
@@ -446,11 +446,22 @@ function Show-proxyMenu
     if ([string]::IsNullOrEmpty($env:ProxyDetected))
     {
         $env:noproxy=$null
-        $env:ProxyDetected = "No Proxy (Direct)"
+        [string]$env:ProxyDetected = $noproxymenu
     } 
     Write-Host " [15] Configure Proxy (Manual, Px NTLM) [$env:ProxyDetected]"
 
 }
+
+
+function ChangeendLine
+
+{
+    Get-ChildItem -Recurse -Filter '*.sh' | ForEach-Object { ./set-eol -lineEnding unix -file $_.FullName }
+
+}
+
+
+Set-Variable -Name "noproxymenu" -Value "Direct access (no proxy server)."
 
 $env:tzoneinfo="UTC"
 $env:rootpw="server"
@@ -460,6 +471,9 @@ Clear-JsonTemplate
 $env:yumupdate="/tmp/linux/yumUpgrade.sh"
 $env:yumupdatemenu="[ALL PACKAGES]"
 $env:ProxyDetected=""
+
 Build-MachineImage
+
 Pause
+
 Clear-Host
