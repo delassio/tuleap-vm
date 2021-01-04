@@ -9,13 +9,13 @@ set -e
 echo 'IMPORT DUMP: Started up'
 
 # remove gitignore file from dump directory
-rm -f /tmp/oracledatabase/dump/.gitignore
+rm -f /home/oracle/dump/.gitignore
 echo 'IMPORT DUMP: Cleanup gitignore file'
 
 # run user-defined import dump scripts
 echo 'IMPORT DUMP: Running import dump scripts'
 
-for f in /tmp/oracledatabase/dump/*
+for f in /home/oracle/dump/*
   do
     case "${f,,}" in
       *.sh)
@@ -28,7 +28,7 @@ for f in /tmp/oracledatabase/dump/*
         su -l oracle -c "echo 'exit' | sqlplus -s / as sysdba @\"$f\""
         echo "IMPORT DUMP: Done running $f"
         ;;
-      /tmp/oracledatabase/dump/put_import_scripts_here.txt)
+      /home/oracle/dump/put_import_scripts_here.txt)
         :
         ;;
       *)
