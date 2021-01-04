@@ -4,3 +4,4 @@
 *.Z
 !.gitignore
 !put_dump_file_&_scripts_here.txt
+!import.sh

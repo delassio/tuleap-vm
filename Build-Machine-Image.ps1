@@ -369,7 +369,10 @@ switch ($selection)
         $x = (Read-Host -Prompt "Virtual Machine Directory ([G]enerate, Default = Tape) ?").ToUpper()
         switch ($x) {
             { 'generate', 'g'  -contains $_ } { $env:vm_directory = "output-" + -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_}) }
-            Default {$env:vm_directory = Read-Host -Prompt "Enter VM Directory: "}
+            Default {
+                $vm_directory = Read-Host -Prompt "Enter VM Directory:"
+                $env:vm_directory = "output-" + $vm_directory
+            }
         }
         Clear-JsonTemplate
     }
@@ -453,14 +456,7 @@ function Show-proxyMenu
 }
 
 
-function ChangeendLine
-
-{
-    Get-ChildItem -Recurse -Filter '*.sh' | ForEach-Object { ./set-eol -lineEnding unix -file $_.FullName }
-
-}
-
-
+Get-ChildItem -Recurse -Filter '*.sh' | ForEach-Object { ./set-eol -lineEnding unix -file $_.FullName }
 Set-Variable -Name "noproxymenu" -Value "Direct access (no proxy server)."
 
 $env:tzoneinfo="UTC"
