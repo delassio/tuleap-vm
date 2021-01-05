@@ -38,7 +38,7 @@ function New-JsonTemplate
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldap/ldapPlugin.sh"
             $InlineScriptOracleInstall="/tmp/oracledatabase/scripts/install.sh"
-            $InlineScriptOracleImport="if [ -e /home/oracle/dump/import.sh  ]; then /home/oracle/dump/import.sh; fi"
+            $InlineScriptOracleImport="/home/oracle/datapump/import.sh"
             $InlineScriptPercona="/tmp/percona/scripts/install.sh"
 
             $EnvVarsOracle=@( "ORACLE_BASE=/opt/oracle",
@@ -409,6 +409,7 @@ switch ($selection)
             }         
             
             { 'm' -contains $_ }  {
+                $ProxyManual=$null
                 $ProxyManual= Read-Host -Prompt "Manual Proxy <IP:port>, <hostname:port> ?"
                 $env:ProxyDetected='http://'+$ProxyManual
             }

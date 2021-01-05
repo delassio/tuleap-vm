@@ -9,26 +9,30 @@ set -e
 echo 'IMPORT DUMP: Started up'
 
 # remove gitignore file from dump directory
-rm -f /home/oracle/dump/.gitignore
+rm -f /home/oracle/datapump/.gitignore
 echo 'IMPORT DUMP: Cleanup gitignore file'
 
 # run user-defined import dump scripts
 echo 'IMPORT DUMP: Running import dump scripts'
 
-for f in /home/oracle/dump/*
+for f in /home/oracle/datapump/*
   do
     case "${f,,}" in
       *.sh)
-        echo "IMPORT DUMP: Running $f"
-        su -l oracle -c ". \"$f\""
-        echo "IMPORT DUMP: Done running $f"
+        	if  [ "${f,,}" ==  "/home/oracle/datapump/import.sh" ] ; then
+		      echo "IMPORT DUMP: Ignoring Nested Script $f"
+        	else
+        	echo "IMPORT DUMP: Running $f"
+        	su -l oracle -c ". \"$f\""
+        	echo "IMPORT DUMP: Done running $f"
+        	fi
         ;;
       *.sql)
         echo "IMPORT DUMP: Running $f"
         su -l oracle -c "echo 'exit' | sqlplus -s / as sysdba @\"$f\""
         echo "IMPORT DUMP: Done running $f"
         ;;
-      /home/oracle/dump/put_import_scripts_here.txt)
+      /home/oracle/datapump/put_import_scripts_here.txt)
         :
         ;;
       *)
