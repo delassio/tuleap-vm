@@ -38,7 +38,7 @@ function New-JsonTemplate
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldap/ldapPlugin.sh"
             $InlineScriptOracleInstall="/tmp/oracledatabase/scripts/install.sh"
-            $InlineScriptOracleImport="/home/oracle/datapump/import.sh"
+            $InlineScriptOracleImport=$env:datapump
             $InlineScriptPercona="/tmp/percona/scripts/install.sh"
 
             $EnvVarsOracle=@( "ORACLE_BASE=/opt/oracle",
@@ -139,7 +139,7 @@ function New-JsonTemplate
             $Json.provisioners[3]=$provisionersshell
 
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracleInstall && $InlineScriptOracleImport"
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracleInstall$InlineScriptOracleImport"
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsOracle
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
@@ -247,6 +247,7 @@ param (
         
             Write-Host " [20] Configure SID: $env:oracle_db_name"
             Write-Host " [21] Configure NLS: $env:oracle_db_characterSet"
+            Write-Host " [22] Data Pump Import: $env:datapumpmenu"
         
         }
 
@@ -428,6 +429,16 @@ switch ($selection)
         $env:oracle_db_characterSet= Read-Host -Prompt "Enter characterSet: "
         Clear-JsonTemplate
     }
+    '22' {
+        $env:datapump = (Read-Host -Prompt "Do you want to use Data Pump Import Script ? ([Y]es, Default = No) ?").ToUpper()
+        switch ($env:datapump) {
+            { 'yes', 'y'  -contains $_ } { $env:datapump=" && /home/oracle/datapump/import.sh" 
+            $env:datapumpmenu="[IMPORT DATA]" }
+            Default { $env:datapump=""
+            $env:datapumpmenu="[NO IMPORT]" }
+        }
+        Clear-JsonTemplate
+    }
     'B' {
         if ([string]::IsNullOrEmpty($env:GeneratedTemplate))
         {
@@ -458,7 +469,7 @@ function Show-proxyMenu
 
 
 Get-ChildItem -Recurse -Filter '*.sh' | ForEach-Object { ./set-eol -lineEnding unix -file $_.FullName }
-Set-Variable -Name "noproxymenu" -Value "Direct access (no proxy server)."
+Set-Variable -Name "noproxymenu" -Value "Direct access (no proxy server)"
 
 $env:tzoneinfo="UTC"
 $env:rootpw="server"
@@ -467,6 +478,8 @@ $env:oracle_db_characterSet="AL32UTF8"
 Clear-JsonTemplate
 $env:yumupdate="/tmp/linux/yumUpgrade.sh"
 $env:yumupdatemenu="[ALL PACKAGES]"
+$env:datapump=""
+$env:datapumpmenu="[NO DATAPUMP]"
 $env:ProxyDetected=""
 
 Build-MachineImage
