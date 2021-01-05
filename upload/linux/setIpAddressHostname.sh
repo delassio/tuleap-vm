@@ -54,7 +54,7 @@ fi
 
 # Copy script to root directory
 
-sudo cp -f /tmp/linux/setIpAddressHostname.sh /root
+if [ -e /tmp/linux/setIpAddressHostname.sh  ]; then sudo cp -f /tmp/linux/setIpAddressHostname.sh /root; fi
 sudo chmod a+rx /root/setIpAddressHostname.sh
 
 echo "LINUX INSTALLER: setIpAddressHostname.sh file setup";
