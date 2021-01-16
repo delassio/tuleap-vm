@@ -17,7 +17,10 @@ yum update
 /usr/lib/forgeupgrade/bin/forgeupgrade --config=/etc/tuleap/forgeupgrade/config.ini update
 
 # Re-generate nginx configuration
-/usr/share/tuleap/tools/utils/php72/run.php --module=nginx
+/usr/share/tuleap/tools/utils/php73/run.php --module=nginx
+
+# Deploy site configurations
+tuleap-cfg site-deploy
 
 # Restart service
 systemctl start httpd
