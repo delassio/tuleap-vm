@@ -475,6 +475,7 @@ $env:tzoneinfo="UTC"
 $env:rootpw="server"
 $env:oracle_db_name="NONCDB"
 $env:oracle_db_characterSet="AL32UTF8"
+$env:vm_directory ="output-vmware-iso"
 Clear-JsonTemplate
 $env:yumupdate="/tmp/linux/yumUpgrade.sh"
 $env:yumupdatemenu="[ALL PACKAGES]"
