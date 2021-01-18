@@ -38,6 +38,7 @@ function New-JsonTemplate
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldap/ldapPlugin.sh"
             $InlineScriptOracleInstall="/tmp/oracledatabase/scripts/install.sh"
+            $InlineScriptOracleCleanup="/tmp/oracledatabase/scripts/tmpcleanup.sh"
             $InlineScriptOracleImport=$env:datapump
             $InlineScriptPercona="/tmp/percona/scripts/install.sh"
 
@@ -116,7 +117,15 @@ function New-JsonTemplate
 
             $Json.provisioners += @{}
             $Json.provisioners += @{}
-            $Json.provisioners += @{}       
+            $Json.provisioners += @{}
+
+            if (-not [string]::IsNullOrEmpty($env:datapump) )
+
+            {
+                $Json.provisioners += @{}   
+            }
+
+            
             $TempFile = New-TemporaryFile
             $Json | ConvertTo-Json -depth 32 | Set-Content $TempFile
             $Json = Get-Content $TempFile | Out-String  | ConvertFrom-Json
@@ -139,9 +148,23 @@ function New-JsonTemplate
             $Json.provisioners[3]=$provisionersshell
 
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracleInstall$InlineScriptOracleImport"
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracleInstall$InlineScriptOracleImport && $InlineScriptOracleCleanup"
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsOracle
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
+
+            if (-not [string]::IsNullOrEmpty($env:datapump) )
+
+            {
+                $Json.provisioners[5] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
+                $Json.provisioners[5] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/datapump'
+                $Json.provisioners[5] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp'
+                
+                $provisionersshell=$Json.provisioners[4]
+                $provisionersfile=$Json.provisioners[5]
+                
+                $Json.provisioners[4]=$provisionersfile
+                $Json.provisioners[5]=$provisionersshell
+            }
 
         } 
         'tuleap' {
@@ -432,7 +455,7 @@ switch ($selection)
     '22' {
         $env:datapump = (Read-Host -Prompt "Do you want to use Data Pump Import Script ? ([Y]es, Default = No) ?").ToUpper()
         switch ($env:datapump) {
-            { 'yes', 'y'  -contains $_ } { $env:datapump=" && /home/oracle/datapump/import.sh" 
+            { 'yes', 'y'  -contains $_ } { $env:datapump=" && cp -rf /tmp/datapump /home/oracle && /home/oracle/datapump/import.sh" 
             $env:datapumpmenu="[IMPORT DATA]" }
             Default { $env:datapump=""
             $env:datapumpmenu="[NO IMPORT]" }
@@ -475,7 +498,6 @@ $env:tzoneinfo="UTC"
 $env:rootpw="server"
 $env:oracle_db_name="NONCDB"
 $env:oracle_db_characterSet="AL32UTF8"
-$env:vm_directory ="output-vmware-iso"
 Clear-JsonTemplate
 $env:yumupdate="/tmp/linux/yumUpgrade.sh"
 $env:yumupdatemenu="[ALL PACKAGES]"

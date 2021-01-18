@@ -3,5 +3,5 @@
 *.dmp
 *.Z
 !.gitignore
-!put_dump_file_&_scripts_here.txt
+!put_dump_file_&_import_scripts_here.txt
 !import.sh

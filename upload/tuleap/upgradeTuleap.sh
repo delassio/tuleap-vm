@@ -9,7 +9,7 @@ systemctl stop nginx
 systemctl stop httpd
 
 # Upgrade packages
-yum update
+yum update -y
 # or to upgrade only Tuleap packages (/!\ you might miss security fixes in Tuleap dependencies):
 # yum update tuleap\*
 

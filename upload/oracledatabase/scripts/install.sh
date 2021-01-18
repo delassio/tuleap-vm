@@ -153,14 +153,5 @@ echo 'ORACLE INSTALLER: Done running user-defined post-setup scripts'
 
 echo "ORACLE PASSWORD FOR SYS AND SYSTEM: $ORACLE_PWD";
 
-sudo cp -rf /tmp/oracledatabase/datapump /home/oracle
-sudo chmod a+rx /home/oracle/datapump/import.sh
-
-echo "ORACLE INSTALLER: import.sh file setup";
-
-echo 'ORACLE INSTALLER: Clearing Out Temporary Directories'
-
-find /tmp  -maxdepth 1 -mindepth 1 -type d -amin +0 -exec rm -rv {} \;
-find /tmp -type f -amin +0 -exec rm -rv {} \;
 
 echo "ORACLE INSTALLER: Installation complete, database ready to use!";
