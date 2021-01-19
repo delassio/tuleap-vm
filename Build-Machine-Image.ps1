@@ -119,7 +119,7 @@ function New-JsonTemplate
             $Json.provisioners += @{}
             $Json.provisioners += @{}
 
-            if (-not [string]::IsNullOrEmpty($env:datapump) -and ($env:ProxyDetected -eq $noproxymenu) )
+            if (($env:PumpDetected -eq $datapumpmenu) )
 
             {
                 $Json.provisioners += @{}   
