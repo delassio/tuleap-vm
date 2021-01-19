@@ -38,8 +38,8 @@ function New-JsonTemplate
             $InlineScriptTuleap="/tmp/tuleap/yumInstallTuleap.sh"
             $InlineScriptTuleapLdap="/tmp/tuleap/ldap/ldapPlugin.sh"
             $InlineScriptOracleInstall="/tmp/oracledatabase/scripts/install.sh"
-            $InlineScriptOracleCleanup="/tmp/oracledatabase/scripts/tmpcleanup.sh"
-            $InlineScriptOracleImport=$env:datapump
+            $InlineScriptOracleCleanup="find /tmp  -maxdepth 1 -mindepth 1 -type d -amin +0 -exec rm -rv {} \; && find /tmp -type f -amin +0 -exec rm -rv {} \;"
+            $InlineScriptOracleImport="cp -rf /tmp/datapump /home/oracle"
             $InlineScriptPercona="/tmp/percona/scripts/install.sh"
 
             $EnvVarsOracle=@( "ORACLE_BASE=/opt/oracle",
@@ -119,7 +119,7 @@ function New-JsonTemplate
             $Json.provisioners += @{}
             $Json.provisioners += @{}
 
-            if (-not [string]::IsNullOrEmpty($env:datapump) )
+            if (-not [string]::IsNullOrEmpty($env:datapump) -and ($env:ProxyDetected -eq $noproxymenu) )
 
             {
                 $Json.provisioners += @{}   
@@ -148,13 +148,15 @@ function New-JsonTemplate
             $Json.provisioners[3]=$provisionersshell
 
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'type' -Value 'shell'
-            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracleInstall$InlineScriptOracleImport && $InlineScriptOracleCleanup"
+            $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'inline' -Value "$InlineScriptPermission && $InlineScriptOracleInstall && $InlineScriptOracleCleanup"
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'environment_vars' -Value $EnvVarsOracle
             $Json.provisioners[4] | Add-Member -Type NoteProperty -Name 'expect_disconnect' -Value 'true'
 
-            if (-not [string]::IsNullOrEmpty($env:datapump) )
+            if (($env:PumpDetected -eq $datapumpmenu) )
 
             {
+                $Json.provisioners[4].inline = "$InlineScriptPermission && $InlineScriptOracleInstall && $InlineScriptOracleImport && $InlineScriptOracleCleanup"
+
                 $Json.provisioners[5] | Add-Member -Type NoteProperty -Name 'type' -Value 'file'
                 $Json.provisioners[5] | Add-Member -Type NoteProperty -Name 'source' -Value 'upload/datapump'
                 $Json.provisioners[5] | Add-Member -Type NoteProperty -Name 'destination' -Value '/tmp'
@@ -270,8 +272,8 @@ param (
         
             Write-Host " [20] Configure SID: $env:oracle_db_name"
             Write-Host " [21] Configure NLS: $env:oracle_db_characterSet"
-            Write-Host " [22] Data Pump Import: $env:datapumpmenu"
-        
+            Write-Host " [22] Data Pump Import: $env:PumpDetected"
+     
         }
 
         function Show-buildMenu
@@ -453,12 +455,13 @@ switch ($selection)
         Clear-JsonTemplate
     }
     '22' {
-        $env:datapump = (Read-Host -Prompt "Do you want to use Data Pump Import Script ? ([Y]es, Default = No) ?").ToUpper()
+        $env:datapump = (Read-Host -Prompt "Do you want to upload Data Pump Directory ? ([Y]es, Default = No) ?").ToUpper()
         switch ($env:datapump) {
-            { 'yes', 'y'  -contains $_ } { $env:datapump=" && cp -rf /tmp/datapump /home/oracle && /home/oracle/datapump/import.sh" 
-            $env:datapumpmenu="[IMPORT DATA]" }
-            Default { $env:datapump=""
-            $env:datapumpmenu="[NO IMPORT]" }
+            { 'yes', 'y'  -contains $_ } { 
+                $env:PumpDetected=$datapumpmenu }
+            Default { 
+                $env:PumpDetected=$nodatapumpmenu
+        }
         }
         Clear-JsonTemplate
     }
@@ -491,19 +494,22 @@ function Show-proxyMenu
 }
 
 
-Get-ChildItem -Recurse -Filter '*.sh' | ForEach-Object { ./set-eol -lineEnding unix -file $_.FullName }
 Set-Variable -Name "noproxymenu" -Value "Direct access (no proxy server)"
+Set-Variable -Name "nodatapumpmenu" -Value "[NO DATAPUMP]"
+Set-Variable -Name "datapumpmenu" -Value "[UPLOAD DATAPUMP DIRECTORY]"
 
 $env:tzoneinfo="UTC"
 $env:rootpw="server"
 $env:oracle_db_name="NONCDB"
 $env:oracle_db_characterSet="AL32UTF8"
+
 Clear-JsonTemplate
+
 $env:yumupdate="/tmp/linux/yumUpgrade.sh"
 $env:yumupdatemenu="[ALL PACKAGES]"
-$env:datapump=""
-$env:datapumpmenu="[NO DATAPUMP]"
+
 $env:ProxyDetected=""
+$env:PumpDetected=$nodatapumpmenu
 
 Build-MachineImage
 

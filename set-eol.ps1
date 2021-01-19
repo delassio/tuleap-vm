@@ -46,3 +46,6 @@ if ($eol -ne "`n") {
 }
 
 Write-Host "File $file Changed to  $lineEnding line endings"
+
+
+### Get-ChildItem -Recurse -Filter '*.sh' | ForEach-Object { ./set-eol -lineEnding unix -file $_.FullName } ###
